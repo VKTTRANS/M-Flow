@@ -161,7 +161,6 @@
     function reverseFormatDate(thaiDate) { return thaiDate ? `20${thaiDate.split('/')[2]}-${thaiDate.split('/')[1]}-${thaiDate.split('/')[0]}` : ""; }
     function displaySafeDate(d) { if (!d) return "-"; if (d.includes("T")) return new Date(d).toLocaleDateString('en-GB'); return d; }
 
-    // 🔑 ระบบ Session: ตรวจสอบและจำการล็อกอิน 7 วัน
     function checkSession() {
         const session = JSON.parse(localStorage.getItem('mflow_session'));
         if (session && session.expire > Date.now()) {
@@ -244,27 +243,30 @@
                     </tr>`; 
             });
             
-            // ⭐️ ปุ่มแก้ไข ย้ายมาอยู่ในแถวเดียวกันกับ ยอดเงิน
+            // ⭐️ จัดการตำแหน่งปุ่มแก้ไข บังคับให้อยู่ติดกับ ยอดเงิน แน่นอน 100%
             let headerEditBtn = "";
             if (currentUserRole === 'admin') {
-                headerEditBtn = `<button class="btn btn-warning btn-sm fw-bold ms-2" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไข</button>`;
+                headerEditBtn = `<button class="btn btn-warning btn-sm fw-bold ms-2" style="padding: 0.15rem 0.5rem; font-size: 0.75rem;" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไข</button>`;
             }
 
             container.innerHTML += `
                 <div class="accordion-item">
                     <h2 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${cId}">
-                            <div class="d-flex justify-content-between align-items-center w-100 pe-3">
-                                <div class="d-flex align-items-center">
+                            <div class="d-flex justify-content-between align-items-center w-100 pe-3 flex-nowrap">
+                                
+                                <div class="d-flex align-items-center flex-shrink-0">
                                     <input class="form-check-input group-checkbox me-3" type="checkbox" style="transform: scale(1.2);" onclick="event.stopPropagation(); toggleAllInGroupFromHeader(this, '${cId}')">
-                                    <span class="fs-6 text-info fw-bold">${group.month} - ${group.week}</span> 
-                                    <small class="text-muted ms-2 d-none d-sm-inline">(${group.dateRange})</small>
+                                    <span class="fs-6 text-light fw-bold">${group.month} - ${group.week}</span> 
+                                    <small class="text-muted ms-2 d-none d-md-inline">(${group.dateRange})</small>
                                 </div>
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <span class="badge bg-secondary">${group.items.length} คัน</span>
-                                    <span class="badge bg-success">${group.totalAmount.toLocaleString()} ฿</span>
+
+                                <div class="d-flex align-items-center justify-content-end flex-shrink-0 ms-2">
+                                    <span class="badge bg-secondary me-2">${group.items.length} คัน</span>
+                                    <span class="badge bg-success text-white px-2 py-1 rounded">${group.totalAmount.toLocaleString()} ฿</span>
                                     ${headerEditBtn}
                                 </div>
+
                             </div>
                         </button>
                     </h2>
@@ -291,7 +293,6 @@
         }
     }
 
-    // ฟังก์ชันจัดการ Checkbox ระดับหัวกลุ่ม (หน้าสัปดาห์)
     function toggleAllInGroupFromHeader(headerCheckbox, groupCollapseId) {
         const master = document.querySelector(`#${groupCollapseId} .master-checkbox`);
         if(master) master.checked = headerCheckbox.checked;
@@ -328,7 +329,6 @@
         return checkedIds;
     }
 
-    // สร้าง PDF ใบปะหน้าสรุป (Checkbox)
     function requestSummaryPDF() {
         const checkedIds = getSelectedIds();
         if(!checkedIds) return;
@@ -343,7 +343,6 @@
         }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
     }
 
-    // สร้าง PDF ใบรับรองเงินสด (Checkbox)
     function requestGeneratePDF() {
         const checkedIds = getSelectedIds();
         if(!checkedIds) return;
@@ -358,7 +357,6 @@
         }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
     }
 
-    // ดาวน์โหลด CSV (Checkbox)
     function processExportChecked() {
         const checkedIds = getSelectedIds();
         if(!checkedIds) return;
