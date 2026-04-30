@@ -7,7 +7,7 @@ body {
 }
 .hidden { display: none !important; }
 
-/* การ์ดสไตล์เรียบหรู ไม่เอาขอบสีเจ็บๆ */
+/* การ์ดสไตล์เรียบหรู */
 .card { 
     background-color: #1e293b; 
     border: 1px solid #334155; 
@@ -63,7 +63,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
     color: #e2e8f0; 
     font-weight: 500; 
     box-shadow: none !important; 
-    padding: 1rem 1.25rem;
+    padding: 0.8rem 1.25rem;
 }
 .accordion-button:not(.collapsed) { 
     background-color: #1e293b; 
