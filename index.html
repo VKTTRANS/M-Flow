@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-Flow บันทึกสลิป</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .slip-preview { max-width: 100%; max-height: 400px; object-fit: contain; border: 1px solid #ddd; border-radius: 8px; }
+        #processingSection { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <h2 class="text-center mb-4">ระบบบันทึกสลิป M-Flow</h2>
+
+    <div id="setupSection" class="card shadow-sm p-4 mx-auto" style="max-width: 600px;">
+        <h4 class="mb-3">1. ตั้งค่ารอบการเบิก</h4>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">ปี</label>
+                <select id="setYear" class="form-select">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">เดือน</label>
+                <select id="setMonth" class="form-select">
+                    <option value="01_Jan">มกราคม (Jan)</option>
+                    <option value="02_Feb">กุมภาพันธ์ (Feb)</option>
+                    <option value="03_Mar">มีนาคม (Mar)</option>
+                    <option value="04_Apr">เมษายน (Apr)</option>
+                    </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">สัปดาห์ที่</label>
+                <select id="setWeek" class="form-select">
+                    <option value="Week 1">สัปดาห์ที่ 1</option>
+                    <option value="Week 2">สัปดาห์ที่ 2</option>
+                    <option value="Week 3">สัปดาห์ที่ 3</option>
+                    <option value="Week 4">สัปดาห์ที่ 4</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">ช่วงวันที่ (เช่น 1-7 ม.ค.)</label>
+                <input type="text" id="setDateRange" class="form-control" placeholder="1-7 ม.ค.">
+            </div>
+            <div class="col-12 mt-4">
+                <label class="form-label text-danger fw-bold">อัปโหลดสลิป (เลือกได้หลายไฟล์พร้อมกัน)</label>
+                <input class="form-control" type="file" id="slipFiles" multiple accept="image/*">
+            </div>
+            <div class="col-12 mt-3">
+                <button class="btn btn-primary w-100" onclick="startImport()">เริ่มทำรายการ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="processingSection" class="card shadow-sm p-4 mx-auto" style="max-width: 800px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">2. บันทึกข้อมูลทีละคัน</h4>
+            <span id="counterBadge" class="badge bg-secondary fs-6">ใบที่ 0 / 0</span>
+        </div>
+        <div class="row">
+            <div class="col-md-6 text-center mb-3 mb-md-0">
+                <img id="slipImagePreview" class="slip-preview bg-light w-100" src="" alt="Slip Preview">
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">ทะเบียนรถ</label>
+                    <input type="text" id="inputPlate" class="form-control" placeholder="กข 1234">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">จำนวนเงิน (บาท)</label>
+                    <input type="number" id="inputAmount" class="form-control" value="30">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">วันที่จ่ายจริงในสลิป (เช่น 01/01/69)</label>
+                    <input type="text" id="inputPaymentDate" class="form-control">
+                </div>
+                
+                <button id="saveBtn" class="btn btn-success w-100 mt-3" onclick="saveData()">
+                    บันทึก & ถัดไป
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ตั้งค่า URL ของ Google Apps Script ที่ได้จากการ Deploy
+    const GAS_URL = "<<ใส่_WEB_APP_URL_ที่นี่>>"; 
+
+    // ตัวแปรเก็บข้อมูล
+    let globalSetup = {};
+    let slipQueue = [];
+    let currentIndex = 0;
+    let currentBase64 = "";
+
+    // ฟังก์ชันเริ่มทำงานเมื่อกดปุ่ม "เริ่มทำรายการ"
+    function startImport() {
+        const files = document.getElementById('slipFiles').files;
+        if (files.length === 0) {
+            alert("กรุณาเลือกไฟล์สลิปอย่างน้อย 1 ใบ");
+            return;
+        }
+
+        // เก็บค่าตั้งต้น
+        globalSetup = {
+            year: document.getElementById('setYear').value,
+            month: document.getElementById('setMonth').value,
+            week: document.getElementById('setWeek').value,
+            dateRange: document.getElementById('setDateRange').value,
+        };
+
+        slipQueue = Array.from(files);
+        currentIndex = 0;
+
+        // สลับหน้าจอ
+        document.getElementById('setupSection').style.display = 'none';
+        document.getElementById('processingSection').style.display = 'block';
+
+        showCurrentSlip();
+    }
+
+    // แสดงสลิปคิวปัจจุบัน
+    function showCurrentSlip() {
+        if (currentIndex >= slipQueue.length) {
+            alert("ทำรายการครบทุกใบเรียบร้อยแล้ว!");
+            window.location.reload(); // รีเฟรชหน้าเพื่อเริ่มใหม่
+            return;
+        }
+
+        const file = slipQueue[currentIndex];
+        document.getElementById('counterBadge').innerText = `ใบที่ ${currentIndex + 1} / ${slipQueue.length}`;
+        
+        // ล้างค่าฟอร์มให้พร้อมกรอก
+        document.getElementById('inputPlate').value = "";
+        document.getElementById('inputPaymentDate').value = "";
+        document.getElementById('saveBtn').innerText = "บันทึก & ถัดไป";
+        document.getElementById('saveBtn').disabled = false;
+
+        // อ่านไฟล์รูปภาพเป็น Base64
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentBase64 = e.target.result;
+            document.getElementById('slipImagePreview').src = currentBase64;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // ฟังก์ชันบันทึกข้อมูลและส่งไป GAS
+    function saveData() {
+        const plate = document.getElementById('inputPlate').value;
+        const amount = document.getElementById('inputAmount').value;
+        const paymentDate = document.getElementById('inputPaymentDate').value;
+
+        if (!plate || !amount || !paymentDate) {
+            alert("กรุณากรอกข้อมูล ทะเบียน จำนวนเงิน และวันที่จ่ายให้ครบถ้วน");
+            return;
+        }
+
+        // ปิดปุ่มกันกดซ้ำ
+        const btn = document.getElementById('saveBtn');
+        btn.innerText = "กำลังบันทึก...";
+        btn.disabled = true;
+
+        const currentFile = slipQueue[currentIndex];
+
+        // เตรียมข้อมูลส่งไป Backend
+        const payload = {
+            year: globalSetup.year,
+            month: globalSetup.month,
+            week: globalSetup.week,
+            dateRange: globalSetup.dateRange,
+            plate: plate,
+            amount: amount,
+            paymentDate: paymentDate,
+            fileName: currentFile.name,
+            mimeType: currentFile.type,
+            fileBase64: currentBase64
+        };
+
+        fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                // บันทึกสำเร็จ ไปรูปถัดไป
+                currentIndex++;
+                showCurrentSlip();
+            } else {
+                alert("เกิดข้อผิดพลาด: " + data.message);
+                btn.innerText = "ลองใหม่";
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            alert("ระบบเครือข่ายมีปัญหา: " + error);
+            btn.innerText = "ลองใหม่";
+            btn.disabled = false;
+        });
+    }
+</script>
+
+</body>
+</html>
