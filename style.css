@@ -50,7 +50,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
     background: #0f172a; 
 }
 
-/* ================= รื้อ Accordion ใหม่ บังคับ 1 บรรทัดเป๊ะๆ ================= */
+/* ================= Accordion ================= */
 .accordion-item { 
     background-color: transparent; 
     border: 1px solid #334155; 
@@ -59,8 +59,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
     overflow: hidden; 
 }
 .accordion-body { background-color: #0f172a; padding: 0; }
-
-/* อนิเมชั่นลูกศรตอนกาง/ยุบ แถบ */
 .custom-caret { transition: transform 0.3s ease; }
 [aria-expanded="true"] .custom-caret { transform: rotate(180deg); }
 
@@ -77,3 +75,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
     background: rgba(15, 23, 42, 0.9); z-index: 9999;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
+
+/* ⭐️ ตกแต่ง SweetAlert2 ให้เป็น Dark Mode สวยๆ */
+.swal2-popup { background-color: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #334155 !important; border-radius: 12px !important; font-family: 'Prompt', sans-serif !important; }
+.swal2-title { color: #fff !important; font-size: 1.5rem !important; }
+.swal2-content, .swal2-html-container { color: #cbd5e1 !important; }
