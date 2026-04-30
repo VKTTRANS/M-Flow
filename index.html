@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<body onload="checkSession()">
+<body>
 
     <datalist id="plateList"></datalist>
 
@@ -44,7 +44,7 @@
         </div>
     </div>
 
-    <div id="loginView" class="container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div id="loginView" class="container d-flex align-items-center justify-content-center hidden" style="min-height: 100vh;">
         <div class="card p-5 text-center shadow-lg" style="max-width: 400px; width: 100%;">
             <div class="mb-2 fs-1 text-gradient"><i class="bi bi-rocket-takeoff"></i></div>
             <h3 class="mb-4 fw-bold text-gradient">M-FLOW LOGIN</h3>
@@ -163,11 +163,16 @@
         const session = JSON.parse(localStorage.getItem('mflow_session'));
         if (session && session.expire > Date.now()) {
             currentUserRole = session.role;
+            // ล็อกอินแล้ว ซ่อน Login โชว์ Dashboard ทันที
             document.getElementById('loginView').classList.add('hidden'); 
             document.getElementById('dashboardView').classList.remove('hidden');
             document.getElementById('userRoleBadge').innerHTML = (currentUserRole === 'admin') ? "<i class='bi bi-person-badge'></i> Admin" : "<i class='bi bi-calculator'></i> บัญชี";
             if (currentUserRole === 'admin') document.getElementById('adminActionBar').classList.remove('hidden');
             loadDashboardData();
+        } else {
+            // หมดอายุหรือไม่เคยล็อกอิน ค่อยโชว์หน้า Login
+            document.getElementById('loginView').classList.remove('hidden');
+            document.getElementById('dashboardView').classList.add('hidden');
         }
     }
 
@@ -190,7 +195,7 @@
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getData' }) }).then(res => res.json()).then(data => {
             if (data.status === "success") { 
                 appData = data.data; 
-                globalDocLinks = data.docLinks || {}; // เก็บประวัติ URL
+                globalDocLinks = data.docLinks || {}; 
                 applyFilters(); 
                 if (data.plates && data.plates.length > 0) {
                     const dl = document.getElementById('plateList'); dl.innerHTML = "";
@@ -238,7 +243,6 @@
                     </tr>`; 
             });
             
-            // ⭐️ ดึง URL ประวัติ ถ้ามีโชว์ป้ายสถานะและปุ่มดูไฟล์
             let pdfLink = globalDocLinks[key];
             let statusHtml = "";
             if (pdfLink) {
@@ -319,7 +323,6 @@
         return ids;
     }
 
-    // ⭐️ ฟังก์ชันสร้างเอกสาร 2-in-1 ใหม่
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); if(!ids) return;
         
@@ -340,7 +343,7 @@
                     if (data.status === "success") { 
                         Swal.fire({ title: 'สร้างสำเร็จ!', text: 'เอกสารรวมพร้อมใช้งานแล้ว กดโหลดเพื่อดูได้เลย', icon: 'success', confirmButtonText: 'เปิดไฟล์' }).then(() => { 
                             window.open(data.url, '_blank'); 
-                            loadDashboardData(); // รีเฟรชหน้าเพื่อโชว์ปุ่ม "ออกเอกสารแล้ว"
+                            loadDashboardData(); 
                         });
                     } else { Swal.fire('ผิดพลาด', data.message, 'error'); }
                 }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); Swal.fire('ขัดข้อง', 'การเชื่อมต่ออินเทอร์เน็ตมีปัญหา', 'error'); });
@@ -427,6 +430,9 @@
             }
         });
     }
+    
+    // 🔥 สั่งรันเช็ค Session ทันทีที่โหลดสคริปต์
+    checkSession();
 </script>
 </body>
 </html>
