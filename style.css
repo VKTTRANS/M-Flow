@@ -11,7 +11,7 @@ body {
 .card { 
     background-color: #1e293b; 
     border: 1px solid #334155; 
-    border-radius: 12px; 
+    border-radius: 10px; 
     box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
 }
 .text-gradient { 
@@ -26,7 +26,7 @@ body {
     background-color: #0f172a; 
     border: 1px solid #334155; 
     color: #f8fafc; 
-    border-radius: 8px;
+    border-radius: 6px;
 }
 .form-control:focus, .form-select:focus {
     background-color: #1e293b;
@@ -35,7 +35,7 @@ body {
     box-shadow: none;
 }
 input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-.btn { border-radius: 8px; font-weight: 500; transition: all 0.2s ease; }
+.btn { border-radius: 6px; font-weight: 500; transition: all 0.2s ease; }
 .btn-primary { background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; }
 
 /* รูปสลิป */
@@ -50,34 +50,35 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
     background: #0f172a; 
 }
 
-/* Accordion จัดกลุ่ม */
+/* ================= Accordion (รื้อโครงสร้างใหม่ บังคับไม่ให้ปุ่มตกบรรทัด) ================= */
 .accordion-item { 
-    background-color: transparent; 
+    background-color: #1e293b; 
     border: 1px solid #334155; 
     margin-bottom: 12px; 
-    border-radius: 10px !important; 
+    border-radius: 8px !important; 
     overflow: hidden; 
 }
+.accordion-header {
+    background-color: #1e293b;
+    border-bottom: 1px solid transparent;
+}
 .accordion-button { 
-    background-color: #1e293b; 
+    background-color: transparent; 
     color: #e2e8f0; 
     font-weight: 500; 
     box-shadow: none !important; 
-    padding: 0.8rem 1.25rem;
+    padding: 0.8rem 0.5rem;
 }
 .accordion-button:not(.collapsed) { 
-    background-color: #1e293b; 
+    background-color: rgba(56, 189, 248, 0.05); 
     color: #38bdf8; 
-    border-bottom: 1px solid #334155;
 }
-.accordion-button::after { filter: invert(1); margin-left: 15px; }
+.accordion-button::after { filter: invert(1); margin-left: 10px; }
 .accordion-body { background-color: #0f172a; padding: 0; }
 
-/* ตาราง */
+/* ตารางและ Checkbox */
 .table-sm th, .table-sm td { padding: 0.6rem 1rem; font-size: 0.9rem; }
 .table-hover tbody tr:hover { background-color: rgba(56, 189, 248, 0.05); }
-
-/* Checkbox */
 .form-check-input { background-color: #334155; border-color: #475569; cursor: pointer; }
 .form-check-input:checked { background-color: #38bdf8; border-color: #38bdf8; }
 
