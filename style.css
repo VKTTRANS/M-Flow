@@ -50,31 +50,19 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
     background: #0f172a; 
 }
 
-/* ================= Accordion ================= */
+/* ================= รื้อ Accordion ใหม่ บังคับ 1 บรรทัดเป๊ะๆ ================= */
 .accordion-item { 
-    background-color: #1e293b; 
+    background-color: transparent; 
     border: 1px solid #334155; 
     margin-bottom: 12px; 
-    border-radius: 8px !important; 
+    border-radius: 10px !important; 
     overflow: hidden; 
 }
-.accordion-header {
-    background-color: #1e293b;
-    border-bottom: 1px solid transparent;
-}
-.accordion-button { 
-    background-color: transparent; 
-    color: #e2e8f0; 
-    font-weight: 500; 
-    box-shadow: none !important; 
-    padding: 0.8rem 0.5rem;
-}
-.accordion-button:not(.collapsed) { 
-    background-color: rgba(56, 189, 248, 0.05); 
-    color: #38bdf8; 
-}
-.accordion-button::after { filter: invert(1); margin-left: 10px; }
 .accordion-body { background-color: #0f172a; padding: 0; }
+
+/* อนิเมชั่นลูกศรตอนกาง/ยุบ แถบ */
+.custom-caret { transition: transform 0.3s ease; }
+[aria-expanded="true"] .custom-caret { transform: rotate(180deg); }
 
 /* ตารางและ Checkbox */
 .table-sm th, .table-sm td { padding: 0.6rem 1rem; font-size: 0.9rem; }
