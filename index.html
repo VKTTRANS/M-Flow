@@ -325,24 +325,39 @@
         return ids;
     }
 
-    // ⭐️ เพิ่มช่องรับยอดโอนเงินใน Popup
+    // ⭐️ เพิ่มระบบเช็ค ป้องกันการเลือกข้ามสัปดาห์
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); if(!ids) return;
 
-        let firstItem = appData.find(r => ids.includes(r.id));
+        let selectedItems = appData.filter(r => ids.includes(r.id));
+        let uniqueWeeks = [...new Set(selectedItems.map(r => `${r.month}|${r.week}`))];
+        
+        // ตรวจจับว่าติ๊ก 2 สัปดาห์พร้อมกันหรือเปล่า
+        if (uniqueWeeks.length > 1) {
+            Swal.fire({
+                title: 'ข้อควรระวัง!', 
+                html: 'กรุณาเลือกทำเอกสาร <b>ทีละ 1 สัปดาห์</b> ครับ<br><small class="text-secondary mt-2 d-block">เนื่องจากระบบต้องคำนวณยอดยกมาแยกกันในแต่ละสัปดาห์<br>การนำมารวมกันจะทำให้ตัวเลขใบสรุปปะหน้าคลาดเคลื่อนครับ</small>', 
+                icon: 'warning',
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'เข้าใจแล้ว'
+            });
+            return;
+        }
+
+        let firstItem = selectedItems[0];
         let currentKey = `${firstItem.month}|${firstItem.week}`;
-        let uniqueKeys = [...new Set(appData.map(r => `${r.month}|${r.week}`))].sort();
-        let currentIndex = uniqueKeys.indexOf(currentKey);
+        let allUniqueKeys = [...new Set(appData.map(r => `${r.month}|${r.week}`))].sort();
+        let currentIndex = allUniqueKeys.indexOf(currentKey);
         
         let suggestedBalance = "";
         let suggestedTransfer = "";
 
         if (currentIndex > 0) {
-            let prevKey = uniqueKeys[currentIndex - 1];
+            let prevKey = allUniqueKeys[currentIndex - 1];
             let [prevMonth, prevWeek] = prevKey.split('|');
             let prevExpenses = appData.filter(r => r.month === prevMonth && r.week === prevWeek).reduce((sum, r) => sum + parseFloat(r.amount), 0);
             suggestedBalance = 80000 - prevExpenses;
-            suggestedTransfer = prevExpenses; // ปกติยอดโอนเข้าจะเท่ากับยอดที่เบิกไป
+            suggestedTransfer = prevExpenses; 
         }
 
         Swal.fire({
@@ -457,7 +472,7 @@
             const img = new Image(); 
             img.onload = () => { 
                 const canvas = document.createElement('canvas'); 
-                const MAX_WIDTH = 600; // บีบอัดรูปสลิปให้ผ่านกฎ 1 ล้านพิกเซล
+                const MAX_WIDTH = 600; 
                 canvas.width = MAX_WIDTH; 
                 canvas.height = img.height * (MAX_WIDTH / img.width); 
                 const ctx = canvas.getContext('2d'); 
