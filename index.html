@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -18,9 +17,9 @@
     <datalist id="plateList"></datalist>
 
     <div id="loadingOverlay" class="hidden">
-        <div class="spinner-border text-info" style="width: 3rem; height: 3rem;" role="status"></div>
+        <div class="spinner-border text-info" style="width: 4rem; height: 4rem;" role="status"></div>
         <h4 class="mt-4 text-info fw-bold">กำลังสร้างเอกสาร PDF...</h4>
-        <p class="text-secondary text-center">ระบบกำลังจัดเรียงข้อมูลและวางรูปสลิป<br>กรุณารอสักครู่ (อาจใช้เวลา 1-2 นาที)</p>
+        <p class="text-secondary text-center">ระบบกำลังจัดเรียงข้อมูลและแทรกรูปสลิป<br>กรุณารอสักครู่ (อาจใช้เวลา 1-3 นาที)</p>
     </div>
 
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
@@ -57,7 +56,7 @@
 
     <div id="dashboardView" class="container py-4 hidden">
         
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-4">
             <h3 class="fw-bold text-gradient mb-0"><i class="bi bi-grid-1x2"></i> DASHBOARD</h3>
             <div class="d-flex align-items-center gap-3">
                 <span id="userRoleBadge" class="badge bg-primary px-3 py-2 fw-normal"></span>
@@ -65,32 +64,33 @@
             </div>
         </div>
         
+        <div class="card p-3 mb-4 border-info shadow-sm">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="text-info fw-bold"><i class="bi bi-check2-square"></i> ดำเนินการกับรายการที่ "ติ๊กเลือก" (ด้านล่าง)</div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-info" onclick="requestSummaryPDF()"><i class="bi bi-file-earmark-pdf"></i> พิมพ์ใบปะหน้าสรุป (PDF)</button>
+                    <button class="btn btn-success" onclick="processExportChecked()"><i class="bi bi-file-earmark-excel"></i> ดาวน์โหลด CSV</button>
+                    <button id="btnAddSlip" class="btn btn-primary hidden" onclick="openImportView()"><i class="bi bi-plus-circle"></i> นำเข้าสลิปใหม่</button>
+                </div>
+            </div>
+        </div>
+
         <div class="row mb-3">
-            <div class="col-md-3 mb-2">
+            <div class="col-md-6 mb-2">
                 <div class="card p-3 h-100 border-top border-info border-3">
                     <div class="text-secondary small fw-bold mb-1">รายการทั้งหมด (ที่กรอง)</div>
                     <div class="fs-4 fw-bold text-light" id="statTotalItems">0</div>
                 </div>
             </div>
-            <div class="col-md-3 mb-2">
+            <div class="col-md-6 mb-2">
                 <div class="card p-3 h-100 border-top border-success border-3">
                     <div class="text-secondary small fw-bold mb-1">ยอดเงินรวม (ที่กรอง)</div>
                     <div class="fs-4 fw-bold text-success" id="statTotalAmount">0 ฿</div>
                 </div>
             </div>
-            <div class="col-md-6 mb-2">
-                <div class="card p-3 h-100 border-secondary d-flex flex-column justify-content-center">
-                    <div class="text-secondary small fw-bold mb-2"><i class="bi bi-check2-square"></i> ดำเนินการกับรายการที่เลือก (ติ๊กถูกหน้ารายการ)</div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-info flex-fill" onclick="processPrintChecked()"><i class="bi bi-printer"></i> พิมพ์ใบปะหน้าสรุป</button>
-                        <button class="btn btn-success flex-fill" onclick="processExportChecked()"><i class="bi bi-file-earmark-excel"></i> ดาวน์โหลด CSV</button>
-                        <button id="btnAddSlip" class="btn btn-primary flex-fill hidden" onclick="openImportView()"><i class="bi bi-plus-circle"></i> นำเข้าสลิปใหม่</button>
-                    </div>
-                </div>
-            </div>
         </div>
         
-        <div class="card p-3 mb-3 border-secondary bg-dark">
+        <div class="card p-3 mb-4 border-secondary bg-dark">
             <div class="row g-2 align-items-end">
                 <div class="col-md-2"><label class="form-label text-secondary small mb-1">ปี</label><select id="filterYear" class="form-select form-select-sm" onchange="applyFilters()"><option value="">ทั้งหมด</option><option value="2026">2026</option></select></div>
                 <div class="col-md-2"><label class="form-label text-secondary small mb-1">เดือน</label><select id="filterMonth" class="form-select form-select-sm" onchange="applyFilters()"><option value="">ทั้งหมด</option><option value="01_Jan">มกราคม</option><option value="02_Feb">กุมภาพันธ์</option><option value="03_Mar">มีนาคม</option><option value="04_Apr">เมษายน</option><option value="05_May">พฤษภาคม</option><option value="06_Jun">มิถุนายน</option><option value="07_Jul">กรกฎาคม</option><option value="08_Aug">สิงหาคม</option><option value="09_Sep">กันยายน</option><option value="10_Oct">ตุลาคม</option><option value="11_Nov">พฤศจิกายน</option><option value="12_Dec">ธันวาคม</option></select></div>
@@ -159,12 +159,11 @@
     function formatThaiDate(dateStr) { return dateStr ? `${dateStr.split('-')[2]}/${dateStr.split('-')[1]}/${dateStr.split('-')[0].substring(2)}` : ""; }
     function reverseFormatDate(thaiDate) { return thaiDate ? `20${thaiDate.split('/')[2]}-${thaiDate.split('/')[1]}-${thaiDate.split('/')[0]}` : ""; }
 
-    // ฟังก์ชันช่วยจัดการรูปแบบวันที่แบบ ISO (กันวันที่เพี้ยน)
     function displaySafeDate(d) {
         if (!d) return "-";
         if (d.includes("T")) {
             let dateObj = new Date(d);
-            return dateObj.toLocaleDateString('en-GB'); // ได้ออกมาเป็น DD/MM/YYYY
+            return dateObj.toLocaleDateString('en-GB'); 
         }
         return d;
     }
@@ -187,8 +186,7 @@
     function loadDashboardData() {
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getData' }) }).then(res => res.json()).then(data => {
             if (data.status === "success") { 
-                appData = data.data; 
-                applyFilters(); 
+                appData = data.data; applyFilters(); 
                 if (data.plates && data.plates.length > 0) {
                     const dl = document.getElementById('plateList'); dl.innerHTML = "";
                     data.plates.forEach(p => dl.innerHTML += `<option value="${p}">`);
@@ -234,30 +232,27 @@
                     </tr>`; 
             });
             
-            // ปุ่มจัดการ PDF และแก้ไข (ย้ายมาอยู่บนหัว Accordion)
+            // ⭐️ ย้ายปุ่ม แก้ไขรายการ และ สร้างใบรับรอง ไปไว้ด้านขวาของหัว Accordion
             let headerActions = "";
             if (currentUserRole === 'admin') {
                 headerActions = `
-                    <div class="d-flex gap-2 ms-3 me-2">
-                        <button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')">แก้ไขรอบนี้</button>
-                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); requestGeneratePDF('${group.month}', '${group.week}')">สร้างใบรับรองเงินสด</button>
-                    </div>`;
+                    <button class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไขรายการในรอบนี้</button>
+                    <button class="btn btn-primary btn-sm fw-bold shadow-sm" onclick="event.stopPropagation(); requestGeneratePDF('${group.month}', '${group.week}')"><i class="bi bi-file-earmark-pdf"></i> สร้างใบรับรองเงินสด</button>
+                `;
             }
 
             container.innerHTML += `
                 <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${cId}">
-                            <div class="d-flex justify-content-between align-items-center w-100">
-                                <div class="d-flex align-items-center">
-                                    <span class="fs-6 text-info fw-bold">${group.month} - ${group.week}</span> 
-                                    <small class="text-muted ms-2 d-none d-sm-inline">(${group.dateRange})</small>
-                                </div>
-                                <div class="d-flex align-items-center flex-wrap gap-2">
-                                    ${headerActions}
-                                    <span class="badge bg-secondary ms-2">${group.items.length} คัน</span>
-                                    <span class="badge bg-success">${group.totalAmount.toLocaleString()} ฿</span>
-                                </div>
+                        <button class="accordion-button collapsed d-flex flex-wrap gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#${cId}">
+                            <div class="me-auto d-flex align-items-center">
+                                <span class="fs-6 text-info fw-bold">${group.month} - ${group.week}</span> 
+                                <small class="text-muted ms-2 d-none d-sm-inline">(${group.dateRange})</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-secondary">${group.items.length} คัน</span>
+                                <span class="badge bg-success fs-6 me-3">${group.totalAmount.toLocaleString()} ฿</span>
+                                ${headerActions}
                             </div>
                         </button>
                     </h2>
@@ -284,7 +279,6 @@
         }
     }
 
-    // ================= ฟังก์ชันจัดการ Checkbox =================
     function toggleAllInGroup(masterCheckbox, groupCollapseId) {
         const checkboxes = document.querySelectorAll(`#${groupCollapseId} .item-checkbox`);
         checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
@@ -298,80 +292,62 @@
         master.indeterminate = (checked > 0 && checked < total);
     }
 
-    function getSelectedData() {
+    function getSelectedIds() {
         const checkedIds = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
         if(checkedIds.length === 0) {
-            alert("กรุณาติ๊กถูกหน้ารายการที่ต้องการทำรายการก่อนครับ (สามารถกดติ๊กที่หัวตารางเพื่อเลือกทั้งหมดได้)");
+            alert("กรุณาติ๊กถูกหน้ารายการที่ต้องการดึงข้อมูลก่อนครับ (กดที่หัวตารางเพื่อเลือกทั้งหมดได้)");
             return null;
         }
-        return appData.filter(row => checkedIds.includes(row.id));
+        return checkedIds;
     }
 
-    // 🖨️ ระบบ Print ใบปะหน้าสรุป (ใช้จาก Checkbox)
-    function processPrintChecked() {
-        let printData = getSelectedData();
-        if(!printData) return;
+    // 📑 ระบบสั่งสร้าง PDF ใบปะหน้าสรุป
+    function requestSummaryPDF() {
+        const checkedIds = getSelectedIds();
+        if(!checkedIds) return;
 
-        let total = 0;
-        let rows = "";
-        let groupTitle = printData.length > 0 ? `${printData[0].month} - ${printData[0].week} (${printData[0].dateRange})` : "รายการเบิกจ่าย";
-
-        printData.forEach((r, index) => {
-            total += parseFloat(r.amount);
-            rows += `<tr><td class="text-center">${index + 1}</td><td>${r.plate}</td><td class="text-right">${r.amount}</td><td class="text-center">${displaySafeDate(r.paymentDate)}</td></tr>`;
-        });
+        if(!confirm(`ระบบจะดึงรายการที่คุณเลือก เพื่อสร้าง "ใบปะหน้าสรุป" \nคุณต้องการดำเนินการต่อหรือไม่?`)) return;
+        document.getElementById('loadingOverlay').classList.remove('hidden'); 
         
-        let printWindow = window.open('', '_blank', 'width=800,height=600');
-        printWindow.document.write(`
-            <html><head><title>ใบปะหน้าสรุปรายการ</title>
-            <style>
-                body { font-family: 'Sarabun', 'Prompt', sans-serif; padding: 30px; color: #333; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-                th, td { border: 1px solid #000; padding: 8px; }
-                th { background-color: #f2f2f2; font-weight: bold; text-align: center;}
-                .text-center { text-align: center; } .text-right { text-align: right; }
-                .header-title { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; }
-                h2 { margin: 0 0 5px 0; } h4 { margin: 0; color: #555; font-weight: normal; }
-                .summary-text { font-size: 16px; margin-top: 20px; text-align: right; font-weight: bold; }
-            </style>
-            </head><body>
-                <div class="header-title">
-                    <h2>ใบสรุปรายการเบิกจ่ายค่าทางด่วน M-FLOW</h2>
-                    <h4>รอบบิลอ้างอิง: ${groupTitle}</h4>
-                </div>
-                <table>
-                    <thead><tr><th width="10%">ลำดับ</th><th width="40%">ทะเบียนรถ</th><th width="25%">จำนวนเงิน (บาท)</th><th width="25%">วันที่ชำระ</th></tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>
-                <div class="summary-text">รวมทั้งสิ้น: &nbsp; ${printData.length} &nbsp; รายการ &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; ยอดเงินรวม: &nbsp; <span style="border-bottom: 3px double #000;">${total.toLocaleString()}</span> &nbsp; บาท</div>
-                <script>window.onload = function() { setTimeout(function() { window.print(); window.close(); }, 500); }<\/script>
-            </body></html>
-        `);
-        printWindow.document.close();
+        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateSummaryPDF', ids: checkedIds }) })
+        .then(res => res.json()).then(data => {
+            document.getElementById('loadingOverlay').classList.add('hidden'); 
+            if (data.status === "success") { alert("✅ สร้างเอกสารใบปะหน้าสำเร็จ! กด OK เพื่อดาวน์โหลด"); window.open(data.url, '_blank'); } 
+            else alert("❌ เกิดข้อผิดพลาด: " + data.message);
+        }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
     }
 
-    // 📥 ระบบดาวน์โหลด CSV (ใช้จาก Checkbox)
+    // 📥 ระบบดาวน์โหลด CSV
     function processExportChecked() {
-        let exportData = getSelectedData();
-        if(!exportData) return;
+        const checkedIds = getSelectedIds();
+        if(!checkedIds) return;
         
+        let exportData = appData.filter(row => checkedIds.includes(row.id));
         let csvContent = "\uFEFF"; 
         csvContent += "รอบเบิก,ช่วงวันที่,ทะเบียนรถ,ยอดเงิน,วันที่จ่าย,ลิงก์สลิป\n";
-        
         exportData.forEach(row => {
             let r = [`"${row.month} ${row.week}"`, `"${row.dateRange}"`, `"${row.plate}"`, `"${row.amount}"`, `"${displaySafeDate(row.paymentDate)}"`, `"${row.url}"`];
             csvContent += r.join(",") + "\n";
         });
-
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
+        const link = document.createElement("a"); link.setAttribute("href", url);
         link.setAttribute("download", `MFlow_Export_${new Date().getTime()}.csv`);
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // ================= ระบบอื่นๆ =================
+    // 📄 ระบบสร้าง PDF ใบรับรองเงินสด (สลิปย่อย)
+    function requestGeneratePDF(month, week) {
+        if(!confirm(`ระบบจะสร้าง "ใบรับรองเงินสด" แยกรายคันของรอบ ${month} ${week} \nใช้เวลาประมาณ 1-3 นาที ดำเนินการต่อหรือไม่?`)) return;
+        document.getElementById('loadingOverlay').classList.remove('hidden'); 
+        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generatePDF', month: month, week: week }) })
+        .then(res => res.json()).then(data => {
+            document.getElementById('loadingOverlay').classList.add('hidden'); 
+            if (data.status === "success") { alert("✅ สร้างเอกสารสำเร็จ! กด OK เพื่อเปิดโฟลเดอร์"); window.open(data.url, '_blank'); } 
+            else alert("❌ ข้อผิดพลาด: " + data.message);
+        }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
+    }
+
     function openEditBatch(month, week) {
         document.getElementById('dashboardView').classList.add('hidden'); document.getElementById('importView').classList.remove('hidden');
         document.getElementById('importTitle').innerHTML = `<i class="bi bi-pencil-square"></i> จัดการข้อมูลย้อนหลัง`;
@@ -379,17 +355,6 @@
         document.getElementById('importSummaryView').classList.remove('hidden');
         sessionRecords = appData.filter(r => r.month === month && r.week === week).map(r => ({ id: r.id, plate: r.plate, amount: r.amount, date: displaySafeDate(r.paymentDate) }));
         renderSummaryTable();
-    }
-
-    function requestGeneratePDF(month, week) {
-        if(!confirm(`สร้างใบรับรองเงินสดของรอบ ${month} ${week} \nใช้เวลาประมาณ 1-2 นาที ดำเนินการต่อหรือไม่?`)) return;
-        document.getElementById('loadingOverlay').classList.remove('hidden'); 
-        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generatePDF', month: month, week: week }) })
-        .then(res => res.json()).then(data => {
-            document.getElementById('loadingOverlay').classList.add('hidden'); 
-            if (data.status === "success") { alert("✅ สร้างเอกสารสำเร็จ! กด OK เพื่อเปิดโฟลเดอร์ Drive"); window.open(data.url, '_blank'); } 
-            else alert("❌ ข้อผิดพลาด: " + data.message);
-        }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
     }
 
     function lookupDateRange() {
