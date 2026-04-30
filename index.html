@@ -8,17 +8,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        .slip-preview {
+            max-height: 65vh; /* ดันความสูงให้เต็มจอขึ้น */
+            width: auto;
+            max-width: 100%;
+        }
+    </style>
 </head>
 <body>
+
+    <datalist id="plateList"></datalist>
 
     <div id="loadingOverlay" class="hidden">
         <div class="spinner-border text-info" style="width: 4rem; height: 4rem;" role="status"></div>
         <h3 class="mt-4 text-info fw-bold">กำลังสร้างเอกสาร PDF...</h3>
-        <p class="text-secondary">ระบบกำลังจัดเรียงข้อมูลและวางรูปสลิป<br>กรุณารอสักครู่ (อาจใช้เวลา 1-2 นาที)</p>
+        <p class="text-secondary text-center">ระบบกำลังจัดเรียงข้อมูลและวางรูปสลิป<br>กรุณารอสักครู่ (อาจใช้เวลา 1-2 นาที)</p>
     </div>
 
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
@@ -30,7 +39,10 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="editId">
-                    <div class="mb-3"><label class="form-label text-secondary">ทะเบียนรถ</label><input type="text" id="editPlate" class="form-control"></div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">ทะเบียนรถ</label>
+                        <input type="text" id="editPlate" class="form-control" list="plateList">
+                    </div>
                     <div class="mb-3"><label class="form-label text-secondary">จำนวนเงิน</label><input type="number" id="editAmount" class="form-control"></div>
                     <div class="mb-3"><label class="form-label text-secondary">วันที่จ่ายจริง (DD/MM/YY)</label><input type="text" id="editDate" class="form-control"></div>
                 </div>
@@ -103,12 +115,22 @@
             </div>
         </div>
 
-        <div id="processingSection" class="card p-4 hidden mx-auto" style="max-width: 900px;">
+        <div id="processingSection" class="card p-4 hidden mx-auto" style="max-width: 1000px;">
             <div class="row align-items-center">
-                <div class="col-md-6 text-center"><img id="slipImagePreview" class="slip-preview w-100 mb-3 shadow" src=""><h5 id="counterBadge" class="badge bg-primary fs-5 px-4 py-2 rounded-pill">ใบที่ 0 / 0</h5></div>
-                <div class="col-md-6 px-4">
-                    <div class="mb-4"><label class="form-label fw-bold text-info fs-5">ทะเบียนรถ</label><input type="text" id="inputPlate" class="form-control form-control-lg"></div>
-                    <div class="mb-5"><label class="form-label fw-bold text-info fs-5">จำนวนเงิน</label><input type="number" id="inputAmount" class="form-control form-control-lg text-success fw-bold" value="30"></div>
+                <div class="col-md-7 text-center">
+                    <img id="slipImagePreview" class="slip-preview mb-3 shadow" src="">
+                    <br>
+                    <h5 id="counterBadge" class="badge bg-primary fs-5 px-4 py-2 rounded-pill">ใบที่ 0 / 0</h5>
+                </div>
+                <div class="col-md-5 px-4 mt-4 mt-md-0">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-info fs-5">ทะเบียนรถ</label>
+                        <input type="text" id="inputPlate" class="form-control form-control-lg text-light" list="plateList" placeholder="พิมพ์เลข 4 ตัวท้าย">
+                    </div>
+                    <div class="mb-5">
+                        <label class="form-label fw-bold text-info fs-5">จำนวนเงิน</label>
+                        <input type="number" id="inputAmount" class="form-control form-control-lg text-success fw-bold" placeholder="ระบุจำนวนเงิน">
+                    </div>
                     <button id="saveBtn" class="btn btn-success w-100 py-3 fs-5 shadow" onclick="saveData()">บันทึก & ถัดไป</button>
                 </div>
             </div>
@@ -154,7 +176,17 @@
 
     function loadDashboardData() {
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getData' }) }).then(res => res.json()).then(data => {
-            if (data.status === "success") { appData = data.data; applyFilters(); }
+            if (data.status === "success") { 
+                appData = data.data; 
+                applyFilters(); 
+                
+                // ดึงรายชื่อทะเบียนรถมาใส่ Datalist
+                if (data.plates && data.plates.length > 0) {
+                    const dl = document.getElementById('plateList');
+                    dl.innerHTML = "";
+                    data.plates.forEach(p => dl.innerHTML += `<option value="${p}">`);
+                }
+            }
         });
     }
 
@@ -214,26 +246,14 @@
 
     function requestGeneratePDF(month, week) {
         if(!confirm(`ระบบจะทำการรวบรวมยอดและสร้าง PDF ใบเบิกของ ${month} ${week} \nใช้เวลาประมาณ 1-2 นาที คุณต้องการดำเนินการต่อหรือไม่?`)) return;
-        
         document.getElementById('loadingOverlay').classList.remove('hidden'); 
         
-        fetch(GAS_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ action: 'generatePDF', month: month, week: week }) 
-        })
-        .then(res => res.json())
-        .then(data => {
+        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generatePDF', month: month, week: week }) })
+        .then(res => res.json()).then(data => {
             document.getElementById('loadingOverlay').classList.add('hidden'); 
-            if (data.status === "success") {
-                alert("✅ สร้างเอกสาร PDF สำเร็จ! กด OK เพื่อเปิดโฟลเดอร์ Google Drive");
-                window.open(data.url, '_blank'); 
-            } else {
-                alert("❌ เกิดข้อผิดพลาด: " + data.message);
-            }
-        }).catch(e => {
-            document.getElementById('loadingOverlay').classList.add('hidden');
-            alert("❌ สัญญาณอินเทอร์เน็ตมีปัญหา โปรดลองใหม่");
-        });
+            if (data.status === "success") { alert("✅ สร้างเอกสาร PDF สำเร็จ! กด OK เพื่อเปิดโฟลเดอร์ Google Drive"); window.open(data.url, '_blank'); } 
+            else alert("❌ เกิดข้อผิดพลาด: " + data.message);
+        }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ สัญญาณอินเทอร์เน็ตมีปัญหา โปรดลองใหม่"); });
     }
 
     function lookupDateRange() {
@@ -257,6 +277,7 @@
         document.getElementById('setupSection').classList.remove('hidden'); document.getElementById('processingSection').classList.add('hidden');
         document.getElementById('importSummaryView').classList.add('hidden'); sessionRecords = []; lookupDateRange();
     }
+    
     function backToDashboard() { document.getElementById('importView').classList.add('hidden'); document.getElementById('dashboardView').classList.remove('hidden'); loadDashboardData(); }
     
     function startImport() {
@@ -265,22 +286,55 @@
         globalSetup = { month: document.getElementById('setMonth').value, week: document.getElementById('setWeek').value, dateRange: `${formatThaiDate(sD)} - ${formatThaiDate(eD)}`, paymentDate: formatThaiDate(pD) };
         slipQueue = Array.from(files); currentIndex = 0; document.getElementById('setupSection').classList.add('hidden'); document.getElementById('processingSection').classList.remove('hidden'); showCurrentSlip();
     }
+
     function showCurrentSlip() {
         if(currentIndex >= slipQueue.length) return showSessionSummary();
-        document.getElementById('counterBadge').innerText = `ใบที่ ${currentIndex + 1} / ${slipQueue.length}`; document.getElementById('inputPlate').value = ""; document.getElementById('inputPlate').focus();
-        const reader = new FileReader(); reader.onload = e => { currentBase64 = e.target.result; document.getElementById('slipImagePreview').src = currentBase64; }; reader.readAsDataURL(slipQueue[currentIndex]);
+        document.getElementById('counterBadge').innerText = `ใบที่ ${currentIndex + 1} / ${slipQueue.length}`; 
+        
+        // ล้างช่องทะเบียนและช่องจำนวนเงินให้ว่าง
+        document.getElementById('inputPlate').value = ""; 
+        document.getElementById('inputAmount').value = ""; 
+        document.getElementById('inputPlate').focus();
+        
+        const file = slipQueue[currentIndex];
+        const reader = new FileReader(); 
+        
+        // 🚀 ระบบบีบอัดรูปภาพก่อนส่งให้ GAS (แก้ปัญหาอัปโหลดช้า)
+        reader.onload = e => { 
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1024; // ย่อภาพให้ความกว้างไม่เกิน 1024px
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // บีบอัดคุณภาพรูป JPEG ให้เหลือ 60% (ไฟล์จะเล็กลงมาก ส่งเร็วขึ้น 3-5 เท่า)
+                currentBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+                document.getElementById('slipImagePreview').src = currentBase64; 
+            }
+            img.src = e.target.result;
+        }; 
+        reader.readAsDataURL(file);
     }
+
     function saveData() {
         const plate = document.getElementById('inputPlate').value, amt = document.getElementById('inputAmount').value;
         if(!plate || !amt) return alert("กรอกข้อมูลให้ครบ");
         const btn = document.getElementById('saveBtn'); btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> บันทึก...`; btn.disabled = true;
-        const payload = { action: 'saveSlip', year: '2026', month: globalSetup.month, week: globalSetup.week, dateRange: globalSetup.dateRange, plate: plate, amount: amt, paymentDate: globalSetup.paymentDate, fileName: slipQueue[currentIndex].name, mimeType: slipQueue[currentIndex].type, fileBase64: currentBase64 };
+        
+        const payload = { action: 'saveSlip', year: '2026', month: globalSetup.month, week: globalSetup.week, dateRange: globalSetup.dateRange, plate: plate, amount: amt, paymentDate: globalSetup.paymentDate, fileName: slipQueue[currentIndex].name, mimeType: "image/jpeg", fileBase64: currentBase64 };
+        
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }).then(res => res.json()).then(data => {
             if(data.status === "success") { sessionRecords.push({ id: data.id, plate: plate, amount: amt, date: globalSetup.paymentDate }); currentIndex++; btn.disabled = false; btn.innerHTML = `<i class="bi bi-check-circle"></i> บันทึก & ถัดไป`; showCurrentSlip(); }
         });
     }
 
     function showSessionSummary() { document.getElementById('processingSection').classList.add('hidden'); document.getElementById('importSummaryView').classList.remove('hidden'); renderSummaryTable(); }
+    
     function renderSummaryTable() {
         let totalAmt = 0; const tbody = document.getElementById('summaryTableBody'); tbody.innerHTML = "";
         sessionRecords.forEach(r => { totalAmt += parseFloat(r.amount); tbody.innerHTML += `<tr class="border-bottom border-secondary"><td>${r.plate}</td><td class='text-success fw-bold'>${r.amount}</td><td>${r.date}</td><td class="text-end pe-3"><button class="btn btn-sm btn-outline-warning rounded-circle me-1" onclick="openEditModal('${r.id}')"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteRecord('${r.id}')"><i class="bi bi-trash"></i></button></td></tr>`; });
@@ -289,12 +343,14 @@
 
     let modalInstance = null;
     function openEditModal(id) { const r = sessionRecords.find(x => x.id === id); if(!r) return; document.getElementById('editId').value = id; document.getElementById('editPlate').value = r.plate; document.getElementById('editAmount').value = r.amount; document.getElementById('editDate').value = r.date; modalInstance = new bootstrap.Modal(document.getElementById('editModal')); modalInstance.show(); }
+    
     function saveEdit() {
         const id = document.getElementById('editId').value, nPlate = document.getElementById('editPlate').value, nAmt = document.getElementById('editAmount').value, nDate = document.getElementById('editDate').value;
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'updateSlip', id: id, plate: nPlate, amount: nAmt, paymentDate: nDate }) }).then(res => res.json()).then(data => {
             if(data.status === "success") { const idx = sessionRecords.findIndex(x => x.id === id); sessionRecords[idx].plate = nPlate; sessionRecords[idx].amount = nAmt; sessionRecords[idx].date = nDate; modalInstance.hide(); renderSummaryTable(); }
         });
     }
+    
     function deleteRecord(id) { if(!confirm("ลบรายการนี้?")) return; fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteSlip', id: id }) }).then(res => res.json()).then(data => { if(data.status === "success") { sessionRecords = sessionRecords.filter(x => x.id !== id); renderSummaryTable(); } }); }
 </script>
 </body>
