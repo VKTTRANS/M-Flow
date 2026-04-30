@@ -325,7 +325,7 @@
         return ids;
     }
 
-    // ⭐️ เพิ่มหน้าต่างให้กรอก ยอดยกมา และ วันที่รับโอนเงิน
+    // ⭐️ เพิ่มช่องรับยอดโอนเงินใน Popup
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); if(!ids) return;
 
@@ -335,11 +335,14 @@
         let currentIndex = uniqueKeys.indexOf(currentKey);
         
         let suggestedBalance = "";
+        let suggestedTransfer = "";
+
         if (currentIndex > 0) {
             let prevKey = uniqueKeys[currentIndex - 1];
             let [prevMonth, prevWeek] = prevKey.split('|');
             let prevExpenses = appData.filter(r => r.month === prevMonth && r.week === prevWeek).reduce((sum, r) => sum + parseFloat(r.amount), 0);
             suggestedBalance = 80000 - prevExpenses;
+            suggestedTransfer = prevExpenses; // ปกติยอดโอนเข้าจะเท่ากับยอดที่เบิกไป
         }
 
         Swal.fire({
@@ -349,9 +352,13 @@
                     <label class="form-label text-secondary small">ยอดคงเหลือยกมา (ฐาน 80,000 บาท)</label>
                     <input id="swal-balance" class="form-control bg-dark text-light border-secondary" type="number" value="${suggestedBalance}" placeholder="ตัวอย่าง: 35158">
                 </div>
-                <div class="mb-2 text-start">
+                <div class="mb-3 text-start">
                     <label class="form-label text-secondary small">วันที่รับโอนเงิน (แสดงที่ช่อง E9)</label>
                     <input id="swal-tdate" class="form-control bg-dark text-light border-secondary" type="date">
+                </div>
+                <div class="mb-2 text-start">
+                    <label class="form-label text-secondary small">ยอดเงินที่รับโอน (แสดงที่ช่อง F9)</label>
+                    <input id="swal-tamount" class="form-control bg-dark text-light border-secondary" type="number" value="${suggestedTransfer}" placeholder="ตัวอย่าง: 44842">
                 </div>
             `,
             icon: 'info',
@@ -363,19 +370,29 @@
             preConfirm: () => {
                 const b = document.getElementById('swal-balance').value;
                 const d = document.getElementById('swal-tdate').value;
+                const a = document.getElementById('swal-tamount').value;
                 if (!b) { Swal.showValidationMessage('กรุณาระบุยอดคงเหลือยกมา'); return false; }
-                return { balance: b, date: d };
+                return { balance: b, date: d, tamount: a };
             }
         }).then((result) => {
             if (result.isConfirmed) {
                 let fwBalance = parseFloat(result.value.balance) || 0;
+                let tAmount = parseFloat(result.value.tamount) || 0;
                 let tDateRaw = result.value.date;
                 let formattedDate = tDateRaw ? formatThaiDate(tDateRaw) : "";
 
                 document.getElementById('loadingOverlay').classList.remove('hidden'); 
                 
-                fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateAllPDFs', ids: ids, forwardBalance: fwBalance, transferDate: formattedDate }) })
-                .then(res => res.json()).then(data => {
+                fetch(GAS_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ 
+                        action: 'generateAllPDFs', 
+                        ids: ids, 
+                        forwardBalance: fwBalance, 
+                        transferDate: formattedDate,
+                        transferAmount: tAmount 
+                    }) 
+                }).then(res => res.json()).then(data => {
                     document.getElementById('loadingOverlay').classList.add('hidden'); 
                     if (data.status === "success") { 
                         Swal.fire({ title: 'สร้างสำเร็จ!', text: 'เอกสารรวมพร้อมใช้งานแล้ว', icon: 'success', confirmButtonText: 'เปิดไฟล์' }).then(() => { 
@@ -431,7 +448,6 @@
         slipQueue = Array.from(files); currentIndex = 0; document.getElementById('setupSection').classList.add('hidden'); document.getElementById('processingSection').classList.remove('hidden'); showCurrentSlip();
     }
 
-    // ⭐️ ลดขนาดรูปสลิปลงให้เหลือ 600px ป้องกันปัญหา 1 ล้านพิกเซล
     function showCurrentSlip() {
         if(currentIndex >= slipQueue.length) return showSessionSummary();
         document.getElementById('counterBadge').innerText = `ใบที่ ${currentIndex + 1} / ${slipQueue.length}`; 
@@ -441,12 +457,12 @@
             const img = new Image(); 
             img.onload = () => { 
                 const canvas = document.createElement('canvas'); 
-                const MAX_WIDTH = 600; // <--- ปรับตรงนี้ให้เล็กลง
+                const MAX_WIDTH = 600; // บีบอัดรูปสลิปให้ผ่านกฎ 1 ล้านพิกเซล
                 canvas.width = MAX_WIDTH; 
                 canvas.height = img.height * (MAX_WIDTH / img.width); 
                 const ctx = canvas.getContext('2d'); 
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
-                currentBase64 = canvas.toDataURL('image/jpeg', 0.5); // บีบอัดคุณภาพ
+                currentBase64 = canvas.toDataURL('image/jpeg', 0.5); 
                 document.getElementById('slipImagePreview').src = currentBase64; 
             }; 
             img.src = e.target.result; 
