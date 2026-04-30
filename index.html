@@ -20,7 +20,7 @@
     <div id="loadingOverlay" class="hidden">
         <div class="spinner-border text-info" style="width: 3rem; height: 3rem;" role="status"></div>
         <h4 class="mt-4 text-info fw-bold" id="loadingTitle">กำลังประมวลผลเอกสาร...</h4>
-        <p class="text-secondary text-center">ระบบกำลังแปลงข้อมูลและรวมไฟล์เป็น PDF<br>กรุณารอสักครู่ (อาจใช้เวลา 1-3 นาที)</p>
+        <p class="text-secondary text-center">ระบบกำลังดึงสลิปมาแนบและรวมไฟล์เป็น PDF<br>กรุณารอสักครู่ (ประมาณ 1-3 นาที)</p>
     </div>
 
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
@@ -163,14 +163,12 @@
         const session = JSON.parse(localStorage.getItem('mflow_session'));
         if (session && session.expire > Date.now()) {
             currentUserRole = session.role;
-            // ล็อกอินแล้ว ซ่อน Login โชว์ Dashboard ทันที
             document.getElementById('loginView').classList.add('hidden'); 
             document.getElementById('dashboardView').classList.remove('hidden');
             document.getElementById('userRoleBadge').innerHTML = (currentUserRole === 'admin') ? "<i class='bi bi-person-badge'></i> Admin" : "<i class='bi bi-calculator'></i> บัญชี";
             if (currentUserRole === 'admin') document.getElementById('adminActionBar').classList.remove('hidden');
             loadDashboardData();
         } else {
-            // หมดอายุหรือไม่เคยล็อกอิน ค่อยโชว์หน้า Login
             document.getElementById('loginView').classList.remove('hidden');
             document.getElementById('dashboardView').classList.add('hidden');
         }
@@ -243,39 +241,49 @@
                     </tr>`; 
             });
             
+            // ⭐️ ดึง URL ประวัติจากฐานข้อมูล
             let pdfLink = globalDocLinks[key];
             let statusHtml = "";
             if (pdfLink) {
                 statusHtml = `
-                    <span class="badge bg-success ms-3 px-2 py-1"><i class="bi bi-check-circle"></i> ออกเอกสารแล้ว</span>
-                    <a href="${pdfLink}" target="_blank" class="btn btn-sm btn-outline-success fw-bold px-3 ms-2" onclick="event.stopPropagation();"><i class="bi bi-file-earmark-pdf"></i> เปิดดูเอกสาร</a>
+                    <span class="badge bg-success ms-2 px-2 py-1"><i class="bi bi-check-circle"></i> ออกเอกสารแล้ว</span>
+                    <a href="${pdfLink}" target="_blank" class="btn btn-sm btn-outline-success fw-bold px-3 ms-2"><i class="bi bi-file-earmark-pdf"></i> เปิดดูเอกสาร</a>
                 `;
             }
 
             let headerEditBtn = "";
             if (currentUserRole === 'admin') {
-                headerEditBtn = `<div class="ps-3 border-start border-secondary py-2 ms-3 d-flex align-items-center"><button class="btn btn-warning btn-sm fw-bold px-4 py-2 text-dark" style="white-space: nowrap;" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square me-1"></i> แก้ไข</button></div>`;
+                headerEditBtn = `<div class="ps-3 border-start border-secondary py-2 ms-2 d-flex align-items-center"><button class="btn btn-warning btn-sm fw-bold px-3 py-1 text-dark" style="white-space: nowrap;" onclick="openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square me-1"></i> แก้ไข</button></div>`;
             }
 
+            // ⭐️ แยกโซนคลิกกางข้อความ ออกจากโซนคลิกปุ่มเด็ดขาด
             container.innerHTML += `
                 <div class="accordion-item border-0 mb-3 shadow-sm" style="background-color: #1e293b; border-radius: 10px; overflow: hidden;">
-                    <div class="d-flex align-items-center flex-nowrap w-100 bg-dark bg-opacity-50">
+                    <div class="d-flex align-items-center flex-nowrap w-100 bg-dark bg-opacity-50 pe-2">
+                        
                         <div class="p-3 border-end border-secondary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 60px;">
-                            <input class="form-check-input group-checkbox m-0" type="checkbox" style="transform: scale(1.3); cursor: pointer;" onclick="event.stopPropagation(); toggleAllInGroupFromHeader(this, '${cId}')">
+                            <input class="form-check-input group-checkbox m-0" type="checkbox" style="transform: scale(1.3); cursor: pointer;" onchange="toggleAllInGroupFromHeader(this, '${cId}')">
                         </div>
-                        <div class="flex-grow-1 d-flex align-items-center justify-content-between px-4 py-3 collapsed" data-bs-toggle="collapse" data-bs-target="#${cId}" style="cursor: pointer; user-select: none;" aria-expanded="false">
-                            <div class="d-flex align-items-center flex-shrink-0">
-                                <span class="fs-6 text-info fw-bold">${group.month} - ${group.week}</span> 
-                                <span class="text-muted ms-3 small d-none d-md-inline">(${group.dateRange})</span>
-                                ${statusHtml}
-                            </div>
-                            <div class="d-flex align-items-center gap-4 flex-shrink-0">
-                                <div class="text-light text-end"><span class="text-secondary small me-2">จำนวนรถ:</span><span class="fw-bold fs-6">${group.items.length} <small class="fw-normal">คัน</small></span></div>
-                                <div class="text-success border-start border-secondary ps-4 text-end"><span class="text-secondary small me-2">ยอดเงินรวม:</span><span class="fw-bold fs-5">${group.totalAmount.toLocaleString()} <small class="fw-normal">฿</small></span></div>
-                                <i class="bi bi-chevron-down text-secondary ms-3 custom-caret"></i>
-                            </div>
+                        
+                        <div class="flex-grow-1 d-flex align-items-center px-3 py-3 collapsed" data-bs-toggle="collapse" data-bs-target="#${cId}" style="cursor: pointer; user-select: none;">
+                            <span class="fs-6 text-info fw-bold" style="white-space: nowrap;">${group.month} - ${group.week}</span> 
+                            <span class="text-muted ms-2 small d-none d-md-inline" style="white-space: nowrap;">(${group.dateRange})</span>
+                            <i class="bi bi-chevron-down text-secondary ms-2 custom-caret"></i>
                         </div>
-                        ${headerEditBtn}
+                        
+                        <div class="d-flex align-items-center flex-shrink-0 flex-nowrap gap-2">
+                            ${statusHtml}
+                            <div class="text-light text-end d-none d-sm-block ms-2 border-start border-secondary ps-3">
+                                <span class="text-secondary small me-1">จำนวน:</span>
+                                <span class="fw-bold fs-6">${group.items.length} <small class="fw-normal">คัน</small></span>
+                            </div>
+                            <div class="text-success border-start border-secondary ps-3 text-end">
+                                <span class="text-secondary small me-1">ยอดรวม:</span>
+                                <span class="fw-bold fs-5">${group.totalAmount.toLocaleString()} <small class="fw-normal">฿</small></span>
+                            </div>
+                            ${headerEditBtn}
+                        </div>
+
                     </div>
                     <div id="${cId}" class="accordion-collapse collapse" data-bs-parent="#dataAccordion">
                         <div class="accordion-body">
@@ -327,8 +335,8 @@
         const ids = getSelectedIds(); if(!ids) return;
         
         Swal.fire({
-            title: 'สร้างเอกสารแบบ 2-in-1',
-            text: 'ระบบจะนำรายการที่ติ๊กเลือก สร้างเป็น "ใบปะหน้าสรุป" และ "ใบเบิกย่อย" รวมเป็นไฟล์ PDF เดียวให้ ใช้เวลาประมาณ 1-3 นาที',
+            title: 'สร้างเอกสารแบบรวมไฟล์',
+            text: 'ระบบจะนำรายการที่ติ๊กเลือก สร้างเป็น "ใบปะหน้าสรุป" และ "ใบเบิกย่อย" รวมเป็นไฟล์ PDF เดียวกันให้ ใช้เวลาประมาณ 1-3 นาที',
             icon: 'info',
             showCancelButton: true,
             confirmButtonColor: '#3b82f6',
@@ -341,7 +349,7 @@
                 fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateAllPDFs', ids: ids }) }).then(res => res.json()).then(data => {
                     document.getElementById('loadingOverlay').classList.add('hidden'); 
                     if (data.status === "success") { 
-                        Swal.fire({ title: 'สร้างสำเร็จ!', text: 'เอกสารรวมพร้อมใช้งานแล้ว กดโหลดเพื่อดูได้เลย', icon: 'success', confirmButtonText: 'เปิดไฟล์' }).then(() => { 
+                        Swal.fire({ title: 'สร้างสำเร็จ!', text: 'เอกสารรวมพร้อมใช้งานแล้ว', icon: 'success', confirmButtonText: 'เปิดไฟล์' }).then(() => { 
                             window.open(data.url, '_blank'); 
                             loadDashboardData(); 
                         });
@@ -431,7 +439,6 @@
         });
     }
     
-    // 🔥 สั่งรันเช็ค Session ทันทีที่โหลดสคริปต์
     checkSession();
 </script>
 </body>
