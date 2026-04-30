@@ -8,17 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <style>
-        .slip-preview {
-            max-height: 65vh; /* ดันความสูงให้เต็มจอขึ้น */
-            width: auto;
-            max-width: 100%;
-        }
-    </style>
 </head>
 <body>
 
@@ -104,7 +97,7 @@
 
         <div id="setupSection" class="card p-4 mx-auto" style="max-width: 700px;">
             <div class="row g-4">
-                <div class="col-md-6"><label class="form-label text-info fw-bold">เดือนของรอบเบิก</label><select id="setMonth" class="form-select form-select-lg" onchange="lookupDateRange()"><option value="01_Jan">มกราคม</option><option value="02_Feb">กุมภาพันธ์</option><option value="03_Mar">มีนาคม</option><option value="04_Apr">เมษายน</option></select></div>
+                <div class="col-md-6"><label class="form-label text-info fw-bold">เดือนของรอบเบิก</label><select id="setMonth" class="form-select form-select-lg" onchange="lookupDateRange()"><option value="01_Jan">มกราคม</option><option value="02_Feb">กุมภาพันธ์</option><option value="03_Mar">มีนาคม</option><option value="04_Apr">เมษายน</option><option value="05_May">พฤษภาคม</option><option value="06_Jun">มิถุนายน</option><option value="07_Jul">กรกฎาคม</option><option value="08_Aug">สิงหาคม</option><option value="09_Sep">กันยายน</option><option value="10_Oct">ตุลาคม</option><option value="11_Nov">พฤศจิกายน</option><option value="12_Dec">ธันวาคม</option></select></div>
                 <div class="col-md-6"><label class="form-label text-info fw-bold">สัปดาห์ที่</label><select id="setWeek" class="form-select form-select-lg" onchange="lookupDateRange()"><option value="Week 1">สัปดาห์ที่ 1</option><option value="Week 2">สัปดาห์ที่ 2</option><option value="Week 3">สัปดาห์ที่ 3</option><option value="Week 4">สัปดาห์ที่ 4</option><option value="Week 5">สัปดาห์ที่ 5</option></select></div>
                 <div class="col-12 border-bottom border-secondary pb-2 d-flex justify-content-between align-items-center"><span class="text-secondary small fw-bold">ช่วงวันที่ของสัปดาห์นี้</span><span id="lookupStatus" class="status-badge bg-dark text-secondary">ใหม่ (ระบุวันที่)</span></div>
                 <div class="col-md-6"><label class="form-label text-secondary fw-bold">ตั้งแต่วันที่</label><input type="date" id="setStartDate" class="form-control form-control-lg"></div>
@@ -180,7 +173,6 @@
                 appData = data.data; 
                 applyFilters(); 
                 
-                // ดึงรายชื่อทะเบียนรถมาใส่ Datalist
                 if (data.plates && data.plates.length > 0) {
                     const dl = document.getElementById('plateList');
                     dl.innerHTML = "";
@@ -219,28 +211,147 @@
             let adminActions = "";
             if (currentUserRole === 'admin') {
                 adminActions = `
-                    <div class="bg-dark p-3 text-end border-bottom border-secondary">
-                        <button class="btn btn-warning btn-sm shadow-sm me-2 fw-bold" onclick="openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไขรายการในรอบนี้</button>
+                    <div class="bg-dark p-3 text-end border-bottom border-secondary d-flex justify-content-end gap-2 flex-wrap">
+                        <button class="btn btn-outline-info btn-sm shadow-sm fw-bold" onclick="printSummaryTable('${group.month}', '${group.week}')"><i class="bi bi-printer"></i> พิมพ์ใบสรุปรายการ</button>
+                        <button class="btn btn-warning btn-sm shadow-sm fw-bold" onclick="openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไขรายการในรอบนี้</button>
                         <button class="btn btn-primary btn-sm shadow-sm fw-bold" onclick="requestGeneratePDF('${group.month}', '${group.week}')"><i class="bi bi-file-earmark-pdf"></i> สร้างเอกสาร PDF สรุปส่งบัญชี</button>
+                    </div>`;
+            } else {
+                // บัญชี (Viewer) ก็ให้มีสิทธิ์กดพิมพ์สรุปรายการดูได้
+                adminActions = `
+                    <div class="bg-dark p-3 text-end border-bottom border-secondary">
+                        <button class="btn btn-outline-info btn-sm shadow-sm fw-bold" onclick="printSummaryTable('${group.month}', '${group.week}')"><i class="bi bi-printer"></i> พิมพ์ใบสรุปรายการ</button>
                     </div>`;
             }
 
-            container.innerHTML += `<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#${cId}"><div><span class="fs-5">${group.month} - ${group.week}</span> <small class="text-muted ms-2">(${group.dateRange})</small></div><div class="me-4 text-end"><span class="badge bg-secondary me-2">${group.items.length} รายการ</span><span class="badge bg-success fs-6">${group.totalAmount.toLocaleString()} ฿</span></div></button></h2><div id="${cId}" class="accordion-collapse collapse" data-bs-parent="#dataAccordion"><div class="accordion-body">${adminActions}<div class="table-responsive"><table class="table table-borderless table-hover align-middle mb-0"><thead class="bg-dark text-secondary"><tr><th class="ps-4">ทะเบียนรถ</th><th>ยอดเงิน</th><th>วันที่จ่าย</th><th class="text-center pe-4">หลักฐาน</th></tr></thead><tbody>${rows}</tbody></table></div></div></div></div>`;
+            // จัด Layout แถบให้กระจายตัวสวยงาม
+            container.innerHTML += `
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${cId}">
+                            <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                <div>
+                                    <span class="fs-5 text-info fw-bold">${group.month} - ${group.week}</span> 
+                                    <small class="text-muted ms-2 d-none d-sm-inline">(${group.dateRange})</small>
+                                </div>
+                                <div class="text-end flex-shrink-0">
+                                    <span class="badge bg-secondary me-2">${group.items.length} รายการ</span>
+                                    <span class="badge bg-success fs-6">${group.totalAmount.toLocaleString()} ฿</span>
+                                </div>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="${cId}" class="accordion-collapse collapse" data-bs-parent="#dataAccordion">
+                        <div class="accordion-body">
+                            ${adminActions}
+                            <div class="table-responsive">
+                                <table class="table table-borderless table-hover align-middle mb-0">
+                                    <thead class="bg-secondary bg-opacity-25 text-light">
+                                        <tr><th class="ps-4 py-3">ทะเบียนรถ</th><th class="py-3">ยอดเงิน</th><th class="py-3">วันที่จ่าย</th><th class="text-center pe-4 py-3">หลักฐาน</th></tr>
+                                    </thead>
+                                    <tbody>${rows}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
             idx++;
         }
     }
 
+    // 🖨️ ระบบ Print ใบสรุป (เด้งหน้าใหม่พร้อมปริ้นท์)
+    function printSummaryTable(month, week) {
+        let printData = appData.filter(r => r.month === month && r.week === week);
+        if(printData.length === 0) return alert("ไม่มีข้อมูลให้พิมพ์");
+        
+        let total = 0;
+        let rows = "";
+        let dateRange = printData[0].dateRange;
+
+        printData.forEach((r, index) => {
+            total += parseFloat(r.amount);
+            rows += `
+                <tr>
+                    <td class="text-center">${index + 1}</td>
+                    <td>${r.plate}</td>
+                    <td class="text-right">${r.amount}</td>
+                    <td class="text-center">${r.paymentDate}</td>
+                </tr>`;
+        });
+        
+        let printWindow = window.open('', '_blank', 'width=800,height=600');
+        printWindow.document.write(`
+            <html><head><title>สรุปรายการ ${month} ${week}</title>
+            <style>
+                body { font-family: 'Sarabun', 'Prompt', sans-serif; padding: 30px; color: #333; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+                th, td { border: 1px solid #000; padding: 10px; }
+                th { background-color: #f2f2f2; font-weight: bold; text-align: center;}
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                .header-title { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+                h2 { margin: 0 0 10px 0; }
+                h4 { margin: 0; color: #555; }
+                .summary-text { font-size: 16px; margin-top: 20px; text-align: right; font-weight: bold; }
+            </style>
+            </head><body>
+                <div class="header-title">
+                    <h2>สรุปรายการเบิกจ่ายค่าทางด่วน M-FLOW</h2>
+                    <h4>รอบบิล: ${month} - ${week} ( ${dateRange} )</h4>
+                </div>
+                <table>
+                    <thead><tr><th width="10%">ลำดับ</th><th width="40%">ทะเบียนรถ</th><th width="25%">จำนวนเงิน (บาท)</th><th width="25%">วันที่ชำระ</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                <div class="summary-text">
+                    รวมทั้งสิ้น: &nbsp; ${printData.length} &nbsp; รายการ &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; ยอดเงินรวม: &nbsp; <span style="border-bottom: 3px double #000;">${total.toLocaleString()}</span> &nbsp; บาท
+                </div>
+                <script>
+                    window.onload = function() { 
+                        setTimeout(function() { window.print(); window.close(); }, 500);
+                    }
+                <\/script>
+            </body></html>
+        `);
+        printWindow.document.close();
+    }
+
+    // 📥 ระบบดาวน์โหลด CSV
+    function exportCSV() {
+        if(appData.length === 0) return alert("ไม่มีข้อมูลให้ดาวน์โหลด");
+        
+        let csvContent = "\uFEFF"; // ใส่ BOM เพื่อให้ Excel อ่านภาษาไทยได้
+        csvContent += "รอบเบิก,ช่วงวันที่,ทะเบียนรถ,ยอดเงิน,วันที่จ่าย,ลิงก์สลิป\n";
+        
+        appData.forEach(row => {
+            let r = [
+                `"${row.month} ${row.week}"`,
+                `"${row.dateRange}"`,
+                `"${row.plate}"`,
+                `"${row.amount}"`,
+                `"${row.paymentDate}"`,
+                `"${row.url}"`
+            ];
+            csvContent += r.join(",") + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `MFlow_Export_${new Date().getTime()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     function openEditBatch(month, week) {
-        document.getElementById('dashboardView').classList.add('hidden');
-        document.getElementById('importView').classList.remove('hidden');
+        document.getElementById('dashboardView').classList.add('hidden'); document.getElementById('importView').classList.remove('hidden');
         document.getElementById('importTitle').innerHTML = `<i class="bi bi-pencil-square"></i> จัดการข้อมูลย้อนหลัง`;
-        document.getElementById('setupSection').classList.add('hidden');
-        document.getElementById('processingSection').classList.add('hidden');
+        document.getElementById('setupSection').classList.add('hidden'); document.getElementById('processingSection').classList.add('hidden');
         document.getElementById('importSummaryView').classList.remove('hidden');
         
-        sessionRecords = appData.filter(r => r.month === month && r.week === week).map(r => ({
-            id: r.id, plate: r.plate, amount: r.amount, date: r.paymentDate
-        }));
+        sessionRecords = appData.filter(r => r.month === month && r.week === week).map(r => ({ id: r.id, plate: r.plate, amount: r.amount, date: r.paymentDate }));
         renderSummaryTable();
     }
 
@@ -290,44 +401,23 @@
     function showCurrentSlip() {
         if(currentIndex >= slipQueue.length) return showSessionSummary();
         document.getElementById('counterBadge').innerText = `ใบที่ ${currentIndex + 1} / ${slipQueue.length}`; 
-        
-        // ล้างช่องทะเบียนและช่องจำนวนเงินให้ว่าง
-        document.getElementById('inputPlate').value = ""; 
-        document.getElementById('inputAmount').value = ""; 
-        document.getElementById('inputPlate').focus();
-        
-        const file = slipQueue[currentIndex];
-        const reader = new FileReader(); 
-        
-        // 🚀 ระบบบีบอัดรูปภาพก่อนส่งให้ GAS (แก้ปัญหาอัปโหลดช้า)
+        document.getElementById('inputPlate').value = ""; document.getElementById('inputAmount').value = ""; document.getElementById('inputPlate').focus();
+        const file = slipQueue[currentIndex]; const reader = new FileReader(); 
         reader.onload = e => { 
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1024; // ย่อภาพให้ความกว้างไม่เกิน 1024px
-                const scaleSize = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH;
-                canvas.height = img.height * scaleSize;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // บีบอัดคุณภาพรูป JPEG ให้เหลือ 60% (ไฟล์จะเล็กลงมาก ส่งเร็วขึ้น 3-5 เท่า)
-                currentBase64 = canvas.toDataURL('image/jpeg', 0.6); 
-                document.getElementById('slipImagePreview').src = currentBase64; 
-            }
-            img.src = e.target.result;
-        }; 
-        reader.readAsDataURL(file);
+            const img = new Image(); img.onload = () => {
+                const canvas = document.createElement('canvas'); const MAX_WIDTH = 1024; const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
+                const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                currentBase64 = canvas.toDataURL('image/jpeg', 0.6); document.getElementById('slipImagePreview').src = currentBase64; 
+            }; img.src = e.target.result;
+        }; reader.readAsDataURL(file);
     }
 
     function saveData() {
         const plate = document.getElementById('inputPlate').value, amt = document.getElementById('inputAmount').value;
         if(!plate || !amt) return alert("กรอกข้อมูลให้ครบ");
         const btn = document.getElementById('saveBtn'); btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> บันทึก...`; btn.disabled = true;
-        
         const payload = { action: 'saveSlip', year: '2026', month: globalSetup.month, week: globalSetup.week, dateRange: globalSetup.dateRange, plate: plate, amount: amt, paymentDate: globalSetup.paymentDate, fileName: slipQueue[currentIndex].name, mimeType: "image/jpeg", fileBase64: currentBase64 };
-        
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }).then(res => res.json()).then(data => {
             if(data.status === "success") { sessionRecords.push({ id: data.id, plate: plate, amount: amt, date: globalSetup.paymentDate }); currentIndex++; btn.disabled = false; btn.innerHTML = `<i class="bi bi-check-circle"></i> บันทึก & ถัดไป`; showCurrentSlip(); }
         });
