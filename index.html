@@ -3,46 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M-Flow System</title>
+    <title>M-Flow Dashboard System</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
     <style>
-        body { background-color: #f8f9fa; }
-        .slip-preview { max-width: 100%; max-height: 400px; object-fit: contain; border: 1px solid #ddd; border-radius: 8px; }
+        body { 
+            font-family: 'Prompt', sans-serif; 
+            background-color: #f4f6f9; 
+            color: #333;
+        }
         .hidden { display: none !important; }
+        
+        /* สไตล์การ์ด */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .card-stat {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
+            border-left: 5px solid #4e73df;
+        }
+        .card-stat.success { border-left-color: #1cc88a; }
+        .card-stat.warning { border-left-color: #f6c23e; }
+        
+        /* สไตล์ตาราง */
+        .table-responsive {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .table thead th {
+            background-color: #f8f9fa;
+            color: #5a5c69;
+            font-weight: 600;
+            border-bottom: 2px solid #e3e6f0;
+        }
+        
+        /* ปุ่มและอื่นๆ */
+        .btn { border-radius: 8px; font-weight: 500; }
+        .btn-primary { background-color: #4e73df; border: none; }
+        .btn-primary:hover { background-color: #2e59d9; }
+        .slip-preview { max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 12px; }
+        
+        /* ส่วน Login */
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px 30px;
+        }
     </style>
 </head>
 <body>
 
-<div class="container py-5">
-    
-    <div id="loginSection" class="card shadow-sm p-4 mx-auto" style="max-width: 400px;">
-        <h3 class="text-center mb-4">เข้าสู่ระบบ</h3>
-        <div class="mb-3">
-            <label class="form-label">Username</label>
-            <input type="text" id="username" class="form-control">
+    <div id="loginView" class="login-wrapper">
+        <div class="card login-card text-center">
+            <h2 class="mb-2 fw-bold" style="color: #4e73df;"><i class="bi bi-car-front"></i> M-Flow</h2>
+            <p class="text-muted mb-4">ระบบจัดการใบเบิกสดย่อยค่าทางด่วน</p>
+            
+            <div class="mb-3 text-start">
+                <label class="form-label">ชื่อผู้ใช้งาน</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                    <input type="text" id="username" class="form-control" placeholder="Username">
+                </div>
+            </div>
+            <div class="mb-4 text-start">
+                <label class="form-label">รหัสผ่าน</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                    <input type="password" id="password" class="form-control" placeholder="Password">
+                </div>
+            </div>
+            <button class="btn btn-primary w-100 py-2 fs-5" onclick="doLogin()">เข้าสู่ระบบ</button>
+            <p id="loginError" class="text-danger mt-3 mb-0 hidden fw-bold"></p>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" id="password" class="form-control">
-        </div>
-        <button class="btn btn-primary w-100" onclick="doLogin()">เข้าสู่ระบบ</button>
-        <p id="loginError" class="text-danger mt-2 text-center hidden"></p>
     </div>
 
-    <div id="adminContainer" class="hidden">
+    <div id="dashboardView" class="container py-4 hidden">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>ระบบบันทึกสลิป (Admin)</h2>
-            <button class="btn btn-outline-danger" onclick="logout()">ออกจากระบบ</button>
+            <div>
+                <h3 class="fw-bold mb-0 text-dark"><i class="bi bi-speedometer2"></i> Dashboard</h3>
+                <p class="text-muted mb-0">ข้อมูลรายการ M-Flow ทั้งหมด</p>
+            </div>
+            <div>
+                <span id="userRoleBadge" class="badge bg-secondary me-3 px-3 py-2">Role</span>
+                <button class="btn btn-outline-danger shadow-sm" onclick="logout()"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</button>
+            </div>
         </div>
 
-        <div id="setupSection" class="card shadow-sm p-4 mx-auto" style="max-width: 600px;">
-            <h4 class="mb-3">1. ตั้งค่ารอบการเบิก</h4>
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card card-stat h-100 p-3">
+                    <div class="text-xs fw-bold text-primary text-uppercase mb-1">จำนวนรายการทั้งหมด</div>
+                    <div class="h3 mb-0 fw-bold text-dark" id="statTotalItems">0 <span class="fs-6 fw-normal text-muted">รายการ</span></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card card-stat success h-100 p-3">
+                    <div class="text-xs fw-bold text-success text-uppercase mb-1">ยอดเงินรวมทั้งหมด</div>
+                    <div class="h3 mb-0 fw-bold text-dark" id="statTotalAmount">0 <span class="fs-6 fw-normal text-muted">บาท</span></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card card-stat warning h-100 p-3 d-flex justify-content-center align-items-start">
+                    <div class="w-100 d-flex justify-content-between gap-2">
+                        <button class="btn btn-success flex-fill shadow-sm" onclick="exportCSV()">
+                            <i class="bi bi-file-earmark-excel"></i> Export CSV
+                        </button>
+                        <button id="btnAddSlip" class="btn btn-primary flex-fill shadow-sm hidden" onclick="openImportView()">
+                            <i class="bi bi-plus-circle"></i> เพิ่มรายการใหม่
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>รอบเบิกจ่าย</th>
+                        <th>ทะเบียนรถ</th>
+                        <th>จำนวนเงิน</th>
+                        <th>วันที่จ่ายจริง</th>
+                        <th class="text-center">หลักฐาน</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <tr><td colspan="5" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="importView" class="container py-4 hidden">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0 text-primary"><i class="bi bi-cloud-upload"></i> นำเข้าสลิป M-Flow</h3>
+            <button class="btn btn-outline-secondary" onclick="backToDashboard()"><i class="bi bi-arrow-left"></i> กลับไปหน้าแรก</button>
+        </div>
+
+        <div id="setupSection" class="card p-4 mx-auto" style="max-width: 600px;">
+            <h5 class="mb-3 fw-bold">1. ตั้งค่ารอบการเบิกของชุดนี้</h5>
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">ปี</label>
-                    <select id="setYear" class="form-select">
-                        <option value="2026" selected>2026</option>
-                    </select>
+                    <select id="setYear" class="form-select"><option value="2026" selected>2026</option></select>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">เดือน</label>
@@ -56,73 +173,68 @@
                     <select id="setWeek" class="form-select">
                         <option value="Week 1">สัปดาห์ที่ 1</option>
                         <option value="Week 2">สัปดาห์ที่ 2</option>
+                        <option value="Week 3">สัปดาห์ที่ 3</option>
+                        <option value="Week 4">สัปดาห์ที่ 4</option>
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">ช่วงวันที่</label>
+                    <label class="form-label">ช่วงวันที่ (เช่น 1-7 ม.ค.)</label>
                     <input type="text" id="setDateRange" class="form-control" placeholder="1-7 ม.ค.">
                 </div>
                 <div class="col-12 mt-4">
-                    <label class="form-label text-danger fw-bold">อัปโหลดสลิป (เลือกได้หลายไฟล์)</label>
+                    <label class="form-label fw-bold text-danger"><i class="bi bi-images"></i> อัปโหลดสลิป (เลือกพร้อมกันหลายไฟล์ได้)</label>
                     <input class="form-control" type="file" id="slipFiles" multiple accept="image/*">
                 </div>
                 <div class="col-12 mt-3">
-                    <button class="btn btn-primary w-100" onclick="startImport()">เริ่มทำรายการ</button>
+                    <button class="btn btn-primary w-100 py-2" onclick="startImport()">เริ่มทำรายการ</button>
                 </div>
             </div>
         </div>
 
-        <div id="processingSection" class="card shadow-sm p-4 mx-auto hidden" style="max-width: 800px;">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="mb-0">2. บันทึกข้อมูลทีละคัน</h4>
-                <span id="counterBadge" class="badge bg-secondary fs-6">ใบที่ 0 / 0</span>
+        <div id="processingSection" class="card p-4 mx-auto hidden" style="max-width: 800px;">
+             <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <h5 class="mb-0 fw-bold">2. บันทึกข้อมูลสลิป</h5>
+                <span id="counterBadge" class="badge bg-primary fs-6 px-3 py-2">ใบที่ 0 / 0</span>
             </div>
             <div class="row">
                 <div class="col-md-6 text-center mb-3 mb-md-0">
-                    <img id="slipImagePreview" class="slip-preview bg-light w-100" src="" alt="Slip Preview">
+                    <img id="slipImagePreview" class="slip-preview bg-light w-100 shadow-sm" src="" alt="Slip Preview">
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">ทะเบียนรถ</label>
-                        <input type="text" id="inputPlate" class="form-control" placeholder="กข 1234">
+                        <label class="form-label fw-bold">ทะเบียนรถ</label>
+                        <input type="text" id="inputPlate" class="form-control form-control-lg" placeholder="เช่น กข 1234">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">จำนวนเงิน (บาท)</label>
-                        <input type="number" id="inputAmount" class="form-control" value="30">
+                        <label class="form-label fw-bold">จำนวนเงิน (บาท)</label>
+                        <input type="number" id="inputAmount" class="form-control form-control-lg" value="30">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">วันที่จ่ายจริง</label>
-                        <input type="text" id="inputPaymentDate" class="form-control">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">วันที่จ่ายจริง (DD/MM/YY)</label>
+                        <input type="text" id="inputPaymentDate" class="form-control form-control-lg" placeholder="เช่น 01/01/69">
                     </div>
-                    <button id="saveBtn" class="btn btn-success w-100 mt-3" onclick="saveData()">บันทึก & ถัดไป</button>
+                    <button id="saveBtn" class="btn btn-success btn-lg w-100 shadow-sm" onclick="saveData()">
+                        <i class="bi bi-save"></i> บันทึก & ถัดไป
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="viewerContainer" class="hidden">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>ระบบเรียกดูข้อมูล (Accounting)</h2>
-            <button class="btn btn-outline-danger" onclick="logout()">ออกจากระบบ</button>
-        </div>
-        <div class="card shadow-sm p-4">
-            <p>หน้าสำหรับแผนกบัญชีดูข้อมูลและ Export CSV (เดี๋ยวเราจะมาเติมตารางข้อมูลทีหลัง)</p>
-            <button class="btn btn-success" onclick="alert('ฟังก์ชัน Export กำลังมา!')">Export CSV</button>
-        </div>
-    </div>
-
-</div>
-
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwyCZR0pWSUrHspbIHOnUXVOux3vThqbKu5yOX8uWFPewCjvkuqyFqohFqc_TLTjYwd/exec"; // **อย่าลืมเปลี่ยน URL ใหม่ที่ได้จากการ Deploy ล่าสุด**
+    // URL ของคุณ
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwyCZR0pWSUrHspbIHOnUXVOux3vThqbKu5yOX8uWFPewCjvkuqyFqohFqc_TLTjYwd/exec"; 
 
-    // ตัวแปรส่วน Admin เหมือนเดิม
+    let currentUserRole = "";
+    let appData = []; // เก็บข้อมูลที่โหลดมา
+
+    // ตัวแปรส่วน Import
     let globalSetup = {};
     let slipQueue = [];
     let currentIndex = 0;
     let currentBase64 = "";
 
-    // --- ฟังก์ชัน Login ---
+    // ================= ระบบ Login =================
     function doLogin() {
         const user = document.getElementById('username').value;
         const pass = document.getElementById('password').value;
@@ -141,35 +253,122 @@
             method: 'POST',
             body: JSON.stringify({ action: 'login', username: user, password: pass })
         })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
             if(data.status === 'success') {
-                document.getElementById('loginSection').classList.add('hidden');
+                currentUserRole = data.role;
+                document.getElementById('loginView').classList.add('hidden');
+                document.getElementById('dashboardView').classList.remove('hidden');
                 
-                // เช็คสิทธิ์
-                if(data.role === 'admin') {
-                    document.getElementById('adminContainer').classList.remove('hidden');
-                } else if(data.role === 'viewer') {
-                    document.getElementById('viewerContainer').classList.remove('hidden');
+                // จัดการ UI ตาม Role
+                document.getElementById('userRoleBadge').innerText = (currentUserRole === 'admin') ? "👨‍💻 แอดมิน (Admin)" : "📊 ฝ่ายบัญชี (Accounting)";
+                if(currentUserRole === 'admin') {
+                    document.getElementById('btnAddSlip').classList.remove('hidden');
                 }
+                
+                // ดึงข้อมูลมาโชว์ที่ Dashboard
+                loadDashboardData();
             } else {
                 errorMsg.innerText = data.message;
             }
+        }).catch(err => { errorMsg.innerText = "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้"; });
+    }
+
+    function logout() { window.location.reload(); }
+
+    // ================= ระบบ Dashboard =================
+    function loadDashboardData() {
+        fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getData' })
         })
-        .catch(err => {
-            errorMsg.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อ";
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                appData = data.data; // เก็บไว้เผื่อ Export
+                renderTable(appData);
+            }
         });
     }
 
-    function logout() {
-        // รีเฟรชหน้าเว็บเพื่อกลับไปหน้า Login
-        window.location.reload();
+    function renderTable(dataArray) {
+        const tbody = document.getElementById('dataTableBody');
+        tbody.innerHTML = "";
+        
+        let totalItems = dataArray.length;
+        let totalAmount = 0;
+
+        if(totalItems === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">ไม่มีข้อมูลในระบบ</td></tr>`;
+        } else {
+            dataArray.forEach(row => {
+                totalAmount += parseFloat(row.amount) || 0;
+                
+                // จัดหน้าตาข้อมูลที่จะแสดง
+                const batchText = `${row.month} - ${row.week} (${row.dateRange})`;
+                const btnLink = row.url ? `<a href="${row.url}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-image"></i> ดูสลิป</a>` : '-';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-muted text-sm">${batchText}</td>
+                    <td class="fw-bold">${row.plate}</td>
+                    <td class="text-success fw-bold">${row.amount} ฿</td>
+                    <td>${row.paymentDate}</td>
+                    <td class="text-center">${btnLink}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        // อัปเดตตัวเลขสรุป
+        document.getElementById('statTotalItems').innerHTML = `${totalItems} <span class="fs-6 fw-normal text-muted">รายการ</span>`;
+        document.getElementById('statTotalAmount').innerHTML = `${totalAmount.toLocaleString()} <span class="fs-6 fw-normal text-muted">บาท</span>`;
     }
 
-    // --- ฟังก์ชันส่วน Admin (Import Slip) ปรับนิดหน่อยให้ส่ง action ---
+    // ================= ระบบ Export CSV =================
+    function exportCSV() {
+        if(appData.length === 0) { alert("ไม่มีข้อมูลให้ Export"); return; }
+        
+        // ใส่ BOM ป้องกันภาษาไทยเพี้ยนใน Excel
+        let csvContent = "\uFEFF"; 
+        csvContent += "ID รายการ,ปี,เดือน,สัปดาห์ที่,ช่วงวันที่,ทะเบียนรถ,จำนวนเงิน,วันที่จ่ายจริง,ลิงก์สลิป\n";
+        
+        appData.forEach(row => {
+            // ป้องกันเครื่องหมายจุลภาคในข้อความ
+            let r = [
+                `"${row.id}"`, `"${row.year}"`, `"${row.month}"`, `"${row.week}"`, `"${row.dateRange}"`,
+                `"${row.plate}"`, `"${row.amount}"`, `"${row.paymentDate}"`, `"${row.url}"`
+            ];
+            csvContent += r.join(",") + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `MFlow_Export_${new Date().getTime()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // ================= ระบบ เพิ่มรายการ (Admin) =================
+    function openImportView() {
+        document.getElementById('dashboardView').classList.add('hidden');
+        document.getElementById('importView').classList.remove('hidden');
+        document.getElementById('setupSection').classList.remove('hidden');
+        document.getElementById('processingSection').classList.add('hidden');
+    }
+
+    function backToDashboard() {
+        document.getElementById('importView').classList.add('hidden');
+        document.getElementById('dashboardView').classList.remove('hidden');
+        loadDashboardData(); // โหลดข้อมูลใหม่เผื่อมีการเพิ่มรายการ
+    }
+
     function startImport() {
         const files = document.getElementById('slipFiles').files;
-        if (files.length === 0) { alert("กรุณาเลือกไฟล์"); return; }
+        if (files.length === 0) { alert("กรุณาเลือกไฟล์สลิป"); return; }
 
         globalSetup = {
             year: document.getElementById('setYear').value,
@@ -188,10 +387,9 @@
 
     function showCurrentSlip() {
         if (currentIndex >= slipQueue.length) {
-            alert("เสร็จสิ้น!");
-            document.getElementById('processingSection').classList.add('hidden');
-            document.getElementById('setupSection').classList.remove('hidden');
-            document.getElementById('slipFiles').value = ""; // เคลียร์ไฟล์
+            alert("บันทึกข้อมูลครบทุกใบเรียบร้อยแล้ว!");
+            document.getElementById('slipFiles').value = "";
+            backToDashboard();
             return;
         }
 
@@ -199,8 +397,10 @@
         document.getElementById('counterBadge').innerText = `ใบที่ ${currentIndex + 1} / ${slipQueue.length}`;
         document.getElementById('inputPlate').value = "";
         document.getElementById('inputPaymentDate').value = "";
-        document.getElementById('saveBtn').innerText = "บันทึก & ถัดไป";
-        document.getElementById('saveBtn').disabled = false;
+        
+        const btn = document.getElementById('saveBtn');
+        btn.innerHTML = `<i class="bi bi-save"></i> บันทึก & ถัดไป`;
+        btn.disabled = false;
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -215,7 +415,7 @@
         const amount = document.getElementById('inputAmount').value;
         const paymentDate = document.getElementById('inputPaymentDate').value;
 
-        if (!plate || !amount || !paymentDate) { alert("กรุณากรอกให้ครบ"); return; }
+        if (!plate || !amount || !paymentDate) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
 
         const btn = document.getElementById('saveBtn');
         btn.innerText = "กำลังบันทึก...";
@@ -223,7 +423,6 @@
 
         const currentFile = slipQueue[currentIndex];
 
-        // เพิ่ม action: 'saveSlip'
         const payload = {
             action: 'saveSlip',
             year: globalSetup.year,
@@ -242,14 +441,14 @@
             method: 'POST',
             body: JSON.stringify(payload)
         })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
             if (data.status === "success") {
                 currentIndex++;
                 showCurrentSlip();
             } else {
                 alert("Error: " + data.message);
-                btn.innerText = "ลองใหม่";
+                btn.innerHTML = `<i class="bi bi-save"></i> ลองใหม่`;
                 btn.disabled = false;
             }
         });
