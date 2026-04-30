@@ -121,16 +121,22 @@
             </div>
         </div>
 
-        <div id="processingSection" class="card p-4 hidden mx-auto border-0" style="max-width: 800px;">
+        <div id="processingSection" class="card p-4 hidden mx-auto border-0" style="max-width: 1000px;">
             <div class="row align-items-center">
-                <div class="col-md-6 text-center">
+                <div class="col-md-7 text-center">
                     <img id="slipImagePreview" class="slip-preview mb-2 shadow-sm" src="">
                     <h6 id="counterBadge" class="badge bg-primary px-3 py-1 rounded-pill mt-2">ใบที่ 0 / 0</h6>
                 </div>
-                <div class="col-md-6 px-3">
-                    <div class="mb-3"><label class="form-label fw-bold text-info small mb-1">ทะเบียนรถ</label><input type="text" id="inputPlate" class="form-control form-control-lg" list="plateList" placeholder="พิมพ์เลข 4 ตัวท้าย"></div>
-                    <div class="mb-4"><label class="form-label fw-bold text-info small mb-1">จำนวนเงิน</label><input type="number" id="inputAmount" class="form-control form-control-lg text-success fw-bold"></div>
-                    <button id="saveBtn" class="btn btn-success w-100 py-3 shadow-sm" onclick="saveData()">บันทึก & ถัดไป</button>
+                <div class="col-md-5 px-4 mt-4 mt-md-0">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-info small mb-1">จำนวนเงิน</label>
+                        <input type="number" id="inputAmount" class="form-control form-control-lg text-success fw-bold">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-info small mb-1">ทะเบียนรถ</label>
+                        <input type="text" id="inputPlate" class="form-control form-control-lg" list="plateList" placeholder="พิมพ์เลข 4 ตัวท้าย">
+                    </div>
+                    <button id="saveBtn" class="btn btn-success w-100 py-3 mt-2 shadow-sm" onclick="saveData()">บันทึก & ถัดไป</button>
                 </div>
             </div>
         </div>
@@ -241,7 +247,6 @@
                     </tr>`; 
             });
             
-            // ⭐️ ดึง URL ประวัติจากฐานข้อมูล
             let pdfLink = globalDocLinks[key];
             let statusHtml = "";
             if (pdfLink) {
@@ -256,21 +261,17 @@
                 headerEditBtn = `<div class="ps-3 border-start border-secondary py-2 ms-2 d-flex align-items-center"><button class="btn btn-warning btn-sm fw-bold px-3 py-1 text-dark" style="white-space: nowrap;" onclick="openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square me-1"></i> แก้ไข</button></div>`;
             }
 
-            // ⭐️ แยกโซนคลิกกางข้อความ ออกจากโซนคลิกปุ่มเด็ดขาด
             container.innerHTML += `
                 <div class="accordion-item border-0 mb-3 shadow-sm" style="background-color: #1e293b; border-radius: 10px; overflow: hidden;">
                     <div class="d-flex align-items-center flex-nowrap w-100 bg-dark bg-opacity-50 pe-2">
-                        
                         <div class="p-3 border-end border-secondary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 60px;">
                             <input class="form-check-input group-checkbox m-0" type="checkbox" style="transform: scale(1.3); cursor: pointer;" onchange="toggleAllInGroupFromHeader(this, '${cId}')">
                         </div>
-                        
                         <div class="flex-grow-1 d-flex align-items-center px-3 py-3 collapsed" data-bs-toggle="collapse" data-bs-target="#${cId}" style="cursor: pointer; user-select: none;">
                             <span class="fs-6 text-info fw-bold" style="white-space: nowrap;">${group.month} - ${group.week}</span> 
                             <span class="text-muted ms-2 small d-none d-md-inline" style="white-space: nowrap;">(${group.dateRange})</span>
                             <i class="bi bi-chevron-down text-secondary ms-2 custom-caret"></i>
                         </div>
-                        
                         <div class="d-flex align-items-center flex-shrink-0 flex-nowrap gap-2">
                             ${statusHtml}
                             <div class="text-light text-end d-none d-sm-block ms-2 border-start border-secondary ps-3">
@@ -283,7 +284,6 @@
                             </div>
                             ${headerEditBtn}
                         </div>
-
                     </div>
                     <div id="${cId}" class="accordion-collapse collapse" data-bs-parent="#dataAccordion">
                         <div class="accordion-body">
@@ -405,8 +405,28 @@
     function showCurrentSlip() {
         if(currentIndex >= slipQueue.length) return showSessionSummary();
         document.getElementById('counterBadge').innerText = `ใบที่ ${currentIndex + 1} / ${slipQueue.length}`; 
-        document.getElementById('inputPlate').value = document.getElementById('inputAmount').value = ""; document.getElementById('inputPlate').focus();
-        const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); const MAX_WIDTH = 1024; canvas.width = MAX_WIDTH; canvas.height = img.height * (MAX_WIDTH / img.width); const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); currentBase64 = canvas.toDataURL('image/jpeg', 0.6); document.getElementById('slipImagePreview').src = currentBase64; }; img.src = e.target.result; }; reader.readAsDataURL(slipQueue[currentIndex]);
+        
+        // ⭐️ สลับให้โฟกัสที่ช่อง จำนวนเงิน (inputAmount) เป็นอันดับแรก
+        document.getElementById('inputAmount').value = ""; 
+        document.getElementById('inputPlate').value = ""; 
+        document.getElementById('inputAmount').focus(); 
+        
+        const reader = new FileReader(); 
+        reader.onload = e => { 
+            const img = new Image(); 
+            img.onload = () => { 
+                const canvas = document.createElement('canvas'); 
+                const MAX_WIDTH = 1024; 
+                canvas.width = MAX_WIDTH; 
+                canvas.height = img.height * (MAX_WIDTH / img.width); 
+                const ctx = canvas.getContext('2d'); 
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
+                currentBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+                document.getElementById('slipImagePreview').src = currentBase64; 
+            }; 
+            img.src = e.target.result; 
+        }; 
+        reader.readAsDataURL(slipQueue[currentIndex]);
     }
 
     function saveData() {
