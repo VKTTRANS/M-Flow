@@ -128,14 +128,8 @@
                     <h6 id="counterBadge" class="badge bg-primary px-3 py-1 rounded-pill mt-2">ใบที่ 0 / 0</h6>
                 </div>
                 <div class="col-md-5 px-4 mt-4 mt-md-0">
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-info small mb-1">จำนวนเงิน</label>
-                        <input type="number" id="inputAmount" class="form-control form-control-lg text-success fw-bold">
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-info small mb-1">ทะเบียนรถ</label>
-                        <input type="text" id="inputPlate" class="form-control form-control-lg" list="plateList" placeholder="พิมพ์เลข 4 ตัวท้าย">
-                    </div>
+                    <div class="mb-4"><label class="form-label fw-bold text-info small mb-1">จำนวนเงิน</label><input type="number" id="inputAmount" class="form-control form-control-lg text-success fw-bold"></div>
+                    <div class="mb-4"><label class="form-label fw-bold text-info small mb-1">ทะเบียนรถ</label><input type="text" id="inputPlate" class="form-control form-control-lg" list="plateList" placeholder="พิมพ์เลข 4 ตัวท้าย"></div>
                     <button id="saveBtn" class="btn btn-success w-100 py-3 mt-2 shadow-sm" onclick="saveData()">บันทึก & ถัดไป</button>
                 </div>
             </div>
@@ -331,22 +325,32 @@
         return ids;
     }
 
+    // ⭐️ เพิ่มหน้าต่างให้กรอก ยอดคงเหลือยกมา ก่อนสร้างเอกสาร
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); if(!ids) return;
         
         Swal.fire({
-            title: 'สร้างเอกสารแบบรวมไฟล์',
-            text: 'ระบบจะนำรายการที่ติ๊กเลือก สร้างเป็น "ใบปะหน้าสรุป" และ "ใบเบิกย่อย" รวมเป็นไฟล์ PDF เดียวกันให้ ใช้เวลาประมาณ 1-3 นาที',
+            title: 'ระบุยอดคงเหลือยกมา',
+            text: 'กรุณากรอกยอดเงินคงเหลือจากสัปดาห์ที่แล้ว เพื่อนำไปคำนวณในใบปะหน้าสรุป (กรอกเฉพาะตัวเลข)',
+            input: 'number',
+            inputPlaceholder: 'ตัวอย่าง: 35158',
+            inputValue: '',
             icon: 'info',
             showCancelButton: true,
             confirmButtonColor: '#3b82f6',
             cancelButtonColor: '#64748b',
             confirmButtonText: 'ยืนยันสร้างเอกสาร',
-            cancelButtonText: 'ยกเลิก'
+            cancelButtonText: 'ยกเลิก',
+            inputValidator: (value) => {
+                if (value === '') { return 'กรุณาระบุยอดเงิน (หากไม่มีให้ใส่ 0)'; }
+            }
         }).then((result) => {
             if (result.isConfirmed) {
+                let fwBalance = parseFloat(result.value) || 0;
                 document.getElementById('loadingOverlay').classList.remove('hidden'); 
-                fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateAllPDFs', ids: ids }) }).then(res => res.json()).then(data => {
+                
+                fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateAllPDFs', ids: ids, forwardBalance: fwBalance }) })
+                .then(res => res.json()).then(data => {
                     document.getElementById('loadingOverlay').classList.add('hidden'); 
                     if (data.status === "success") { 
                         Swal.fire({ title: 'สร้างสำเร็จ!', text: 'เอกสารรวมพร้อมใช้งานแล้ว', icon: 'success', confirmButtonText: 'เปิดไฟล์' }).then(() => { 
@@ -405,28 +409,8 @@
     function showCurrentSlip() {
         if(currentIndex >= slipQueue.length) return showSessionSummary();
         document.getElementById('counterBadge').innerText = `ใบที่ ${currentIndex + 1} / ${slipQueue.length}`; 
-        
-        // ⭐️ สลับให้โฟกัสที่ช่อง จำนวนเงิน (inputAmount) เป็นอันดับแรก
-        document.getElementById('inputAmount').value = ""; 
-        document.getElementById('inputPlate').value = ""; 
-        document.getElementById('inputAmount').focus(); 
-        
-        const reader = new FileReader(); 
-        reader.onload = e => { 
-            const img = new Image(); 
-            img.onload = () => { 
-                const canvas = document.createElement('canvas'); 
-                const MAX_WIDTH = 1024; 
-                canvas.width = MAX_WIDTH; 
-                canvas.height = img.height * (MAX_WIDTH / img.width); 
-                const ctx = canvas.getContext('2d'); 
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
-                currentBase64 = canvas.toDataURL('image/jpeg', 0.6); 
-                document.getElementById('slipImagePreview').src = currentBase64; 
-            }; 
-            img.src = e.target.result; 
-        }; 
-        reader.readAsDataURL(slipQueue[currentIndex]);
+        document.getElementById('inputAmount').value = ""; document.getElementById('inputPlate').value = ""; document.getElementById('inputAmount').focus(); 
+        const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); const MAX_WIDTH = 1024; canvas.width = MAX_WIDTH; canvas.height = img.height * (MAX_WIDTH / img.width); const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); currentBase64 = canvas.toDataURL('image/jpeg', 0.6); document.getElementById('slipImagePreview').src = currentBase64; }; img.src = e.target.result; }; reader.readAsDataURL(slipQueue[currentIndex]);
     }
 
     function saveData() {
