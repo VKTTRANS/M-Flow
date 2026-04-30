@@ -325,31 +325,56 @@
         return ids;
     }
 
-    // ⭐️ เพิ่มหน้าต่างให้กรอก ยอดคงเหลือยกมา ก่อนสร้างเอกสาร
+    // ⭐️ เพิ่มหน้าต่างให้กรอก ยอดยกมา และ วันที่รับโอนเงิน
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); if(!ids) return;
+
+        let firstItem = appData.find(r => ids.includes(r.id));
+        let currentKey = `${firstItem.month}|${firstItem.week}`;
+        let uniqueKeys = [...new Set(appData.map(r => `${r.month}|${r.week}`))].sort();
+        let currentIndex = uniqueKeys.indexOf(currentKey);
         
+        let suggestedBalance = "";
+        if (currentIndex > 0) {
+            let prevKey = uniqueKeys[currentIndex - 1];
+            let [prevMonth, prevWeek] = prevKey.split('|');
+            let prevExpenses = appData.filter(r => r.month === prevMonth && r.week === prevWeek).reduce((sum, r) => sum + parseFloat(r.amount), 0);
+            suggestedBalance = 80000 - prevExpenses;
+        }
+
         Swal.fire({
-            title: 'ระบุยอดคงเหลือยกมา',
-            text: 'กรุณากรอกยอดเงินคงเหลือจากสัปดาห์ที่แล้ว เพื่อนำไปคำนวณในใบปะหน้าสรุป (กรอกเฉพาะตัวเลข)',
-            input: 'number',
-            inputPlaceholder: 'ตัวอย่าง: 35158',
-            inputValue: '',
+            title: 'ตั้งค่าเอกสาร',
+            html: `
+                <div class="mb-3 text-start">
+                    <label class="form-label text-secondary small">ยอดคงเหลือยกมา (ฐาน 80,000 บาท)</label>
+                    <input id="swal-balance" class="form-control bg-dark text-light border-secondary" type="number" value="${suggestedBalance}" placeholder="ตัวอย่าง: 35158">
+                </div>
+                <div class="mb-2 text-start">
+                    <label class="form-label text-secondary small">วันที่รับโอนเงิน (แสดงที่ช่อง E9)</label>
+                    <input id="swal-tdate" class="form-control bg-dark text-light border-secondary" type="date">
+                </div>
+            `,
             icon: 'info',
             showCancelButton: true,
             confirmButtonColor: '#3b82f6',
             cancelButtonColor: '#64748b',
             confirmButtonText: 'ยืนยันสร้างเอกสาร',
             cancelButtonText: 'ยกเลิก',
-            inputValidator: (value) => {
-                if (value === '') { return 'กรุณาระบุยอดเงิน (หากไม่มีให้ใส่ 0)'; }
+            preConfirm: () => {
+                const b = document.getElementById('swal-balance').value;
+                const d = document.getElementById('swal-tdate').value;
+                if (!b) { Swal.showValidationMessage('กรุณาระบุยอดคงเหลือยกมา'); return false; }
+                return { balance: b, date: d };
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                let fwBalance = parseFloat(result.value) || 0;
+                let fwBalance = parseFloat(result.value.balance) || 0;
+                let tDateRaw = result.value.date;
+                let formattedDate = tDateRaw ? formatThaiDate(tDateRaw) : "";
+
                 document.getElementById('loadingOverlay').classList.remove('hidden'); 
                 
-                fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateAllPDFs', ids: ids, forwardBalance: fwBalance }) })
+                fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateAllPDFs', ids: ids, forwardBalance: fwBalance, transferDate: formattedDate }) })
                 .then(res => res.json()).then(data => {
                     document.getElementById('loadingOverlay').classList.add('hidden'); 
                     if (data.status === "success") { 
@@ -406,11 +431,27 @@
         slipQueue = Array.from(files); currentIndex = 0; document.getElementById('setupSection').classList.add('hidden'); document.getElementById('processingSection').classList.remove('hidden'); showCurrentSlip();
     }
 
+    // ⭐️ ลดขนาดรูปสลิปลงให้เหลือ 600px ป้องกันปัญหา 1 ล้านพิกเซล
     function showCurrentSlip() {
         if(currentIndex >= slipQueue.length) return showSessionSummary();
         document.getElementById('counterBadge').innerText = `ใบที่ ${currentIndex + 1} / ${slipQueue.length}`; 
         document.getElementById('inputAmount').value = ""; document.getElementById('inputPlate').value = ""; document.getElementById('inputAmount').focus(); 
-        const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); const MAX_WIDTH = 1024; canvas.width = MAX_WIDTH; canvas.height = img.height * (MAX_WIDTH / img.width); const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); currentBase64 = canvas.toDataURL('image/jpeg', 0.6); document.getElementById('slipImagePreview').src = currentBase64; }; img.src = e.target.result; }; reader.readAsDataURL(slipQueue[currentIndex]);
+        const reader = new FileReader(); 
+        reader.onload = e => { 
+            const img = new Image(); 
+            img.onload = () => { 
+                const canvas = document.createElement('canvas'); 
+                const MAX_WIDTH = 600; // <--- ปรับตรงนี้ให้เล็กลง
+                canvas.width = MAX_WIDTH; 
+                canvas.height = img.height * (MAX_WIDTH / img.width); 
+                const ctx = canvas.getContext('2d'); 
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
+                currentBase64 = canvas.toDataURL('image/jpeg', 0.5); // บีบอัดคุณภาพ
+                document.getElementById('slipImagePreview').src = currentBase64; 
+            }; 
+            img.src = e.target.result; 
+        }; 
+        reader.readAsDataURL(slipQueue[currentIndex]);
     }
 
     function saveData() {
