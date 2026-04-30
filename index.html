@@ -9,6 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
@@ -18,7 +20,7 @@
 
     <div id="loadingOverlay" class="hidden">
         <div class="spinner-border text-info" style="width: 3rem; height: 3rem;" role="status"></div>
-        <h4 class="mt-4 text-info fw-bold">กำลังประมวลผลเอกสาร...</h4>
+        <h4 class="mt-4 text-info fw-bold" id="loadingTitle">กำลังประมวลผลเอกสาร...</h4>
         <p class="text-secondary text-center">ระบบกำลังจัดเรียงข้อมูลและแทรกรูปภาพ<br>กรุณารอสักครู่ (อาจใช้เวลา 1-3 นาที)</p>
     </div>
 
@@ -50,7 +52,6 @@
             <div class="mb-3 text-start"><label class="form-label text-secondary small">USERNAME</label><input type="text" id="username" class="form-control" onkeypress="if(event.key==='Enter') doLogin()"></div>
             <div class="mb-4 text-start"><label class="form-label text-secondary small">PASSWORD</label><input type="password" id="password" class="form-control" onkeypress="if(event.key==='Enter') doLogin()"></div>
             <button class="btn btn-primary w-100 py-2" onclick="doLogin()">เข้าสู่ระบบ</button>
-            <p id="loginError" class="text-danger mt-3 hidden small"></p>
         </div>
     </div>
 
@@ -61,9 +62,8 @@
             
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <div id="adminActionBar" class="d-flex align-items-center gap-2 hidden">
-                    <span class="text-secondary small me-2"><i class="bi bi-arrow-right-short"></i> จัดการรายการที่ติ๊ก:</span>
-                    <button class="btn btn-outline-info btn-sm fw-bold px-3" onclick="requestSummaryPDF()"><i class="bi bi-printer"></i> ใบปะหน้าสรุป</button>
-                    <button class="btn btn-outline-info btn-sm fw-bold px-3" onclick="requestGeneratePDF()"><i class="bi bi-file-earmark-pdf"></i> ใบรับรองเงินสด</button>
+                    <span class="text-secondary small me-2"><i class="bi bi-arrow-right-short"></i> ดำเนินการที่ติ๊ก:</span>
+                    <button class="btn btn-outline-info btn-sm fw-bold px-3" onclick="requestGenerateAllPDFs()"><i class="bi bi-file-earmark-pdf"></i> สร้างเอกสาร (ปะหน้า + ใบเบิก)</button>
                     <button class="btn btn-success btn-sm fw-bold px-3" onclick="processExportChecked()"><i class="bi bi-file-earmark-excel"></i> ดาวน์โหลด CSV</button>
                     <button class="btn btn-primary btn-sm fw-bold shadow-sm ms-3 px-3" onclick="openImportView()"><i class="bi bi-plus-circle"></i> นำเข้าสลิปใหม่</button>
                 </div>
@@ -160,6 +160,7 @@
     function reverseFormatDate(thaiDate) { return thaiDate ? `20${thaiDate.split('/')[2]}-${thaiDate.split('/')[1]}-${thaiDate.split('/')[0]}` : ""; }
     function displaySafeDate(d) { if (!d) return "-"; if (d.includes("T")) return new Date(d).toLocaleDateString('en-GB'); return d; }
 
+    // 🔑 ฟังก์ชันล็อกอินและตรวจสอบสิทธิ์
     function checkSession() {
         const session = JSON.parse(localStorage.getItem('mflow_session'));
         if (session && session.expire > Date.now()) {
@@ -167,20 +168,23 @@
             document.getElementById('loginView').classList.add('hidden'); 
             document.getElementById('dashboardView').classList.remove('hidden');
             document.getElementById('userRoleBadge').innerHTML = (currentUserRole === 'admin') ? "<i class='bi bi-person-badge'></i> Admin" : "<i class='bi bi-calculator'></i> บัญชี";
-            if (currentUserRole === 'admin') document.getElementById('adminActionBar').classList.remove('hidden');
+            if (currentUserRole === 'admin') {
+                document.getElementById('adminActionBar').classList.remove('hidden');
+            }
             loadDashboardData();
         }
     }
 
     function doLogin() {
-        const u = document.getElementById('username').value, p = document.getElementById('password').value, err = document.getElementById('loginError');
-        err.classList.remove('hidden'); err.innerText = "กำลังตรวจสอบ..."; err.className = "text-info mt-3 fw-bold";
+        const u = document.getElementById('username').value, p = document.getElementById('password').value;
+        Swal.fire({ title: 'กำลังตรวจสอบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'login', username: u, password: p }) })
         .then(res => res.json()).then(data => {
             if (data.status === 'success') {
+                Swal.close();
                 localStorage.setItem('mflow_session', JSON.stringify({ role: data.role, expire: Date.now() + (7 * 24 * 60 * 60 * 1000) }));
                 checkSession();
-            } else { err.className = "text-danger mt-3 fw-bold"; err.innerText = "❌ " + data.message; }
+            } else { Swal.fire('ผิดพลาด', 'Username หรือ Password ไม่ถูกต้อง', 'error'); }
         });
     }
 
@@ -238,63 +242,33 @@
             
             let headerEditBtn = "";
             if (currentUserRole === 'admin') {
-                // ปุ่มแก้ไขแบบแยกโซนออกมาด้านขวาสุด ชัดเจน ไม่ตกบรรทัด
-                headerEditBtn = `
-                <div class="ps-3 border-start border-secondary py-2 ms-3 d-flex align-items-center">
-                    <button class="btn btn-warning btn-sm fw-bold px-4 py-2 text-dark" style="white-space: nowrap;" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')">
-                        <i class="bi bi-pencil-square me-1"></i> แก้ไข
-                    </button>
-                </div>`;
+                headerEditBtn = `<div class="ps-3 border-start border-secondary py-2 ms-3 d-flex align-items-center"><button class="btn btn-warning btn-sm fw-bold px-4 py-2 text-dark" style="white-space: nowrap;" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square me-1"></i> แก้ไข</button></div>`;
             }
 
-            // ⭐️ โครงสร้างใหม่ แบ่งพื้นที่ 3 ส่วน บังคับ 1 บรรทัด (flex-nowrap)
             container.innerHTML += `
                 <div class="accordion-item border-0 mb-3 shadow-sm" style="background-color: #1e293b; border-radius: 10px; overflow: hidden;">
-                    
                     <div class="d-flex align-items-center flex-nowrap w-100 bg-dark bg-opacity-50">
-                        
                         <div class="p-3 border-end border-secondary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 60px;">
                             <input class="form-check-input group-checkbox m-0" type="checkbox" style="transform: scale(1.3); cursor: pointer;" onclick="event.stopPropagation(); toggleAllInGroupFromHeader(this, '${cId}')">
                         </div>
-                        
                         <div class="flex-grow-1 d-flex align-items-center justify-content-between px-4 py-3 collapsed" data-bs-toggle="collapse" data-bs-target="#${cId}" style="cursor: pointer; user-select: none;" aria-expanded="false">
-                            
                             <div class="d-flex align-items-center flex-shrink-0">
                                 <span class="fs-6 text-info fw-bold">${group.month} - ${group.week}</span> 
                                 <span class="text-muted ms-3 small d-none d-md-inline">(${group.dateRange})</span>
                             </div>
-
                             <div class="d-flex align-items-center gap-4 flex-shrink-0">
-                                <div class="text-light text-end">
-                                    <span class="text-secondary small me-2">จำนวนรถ:</span>
-                                    <span class="fw-bold fs-6">${group.items.length} <small class="fw-normal">คัน</small></span>
-                                </div>
-                                <div class="text-success border-start border-secondary ps-4 text-end">
-                                    <span class="text-secondary small me-2">ยอดเงินรวม:</span>
-                                    <span class="fw-bold fs-5">${group.totalAmount.toLocaleString()} <small class="fw-normal">฿</small></span>
-                                </div>
+                                <div class="text-light text-end"><span class="text-secondary small me-2">จำนวนรถ:</span><span class="fw-bold fs-6">${group.items.length} <small class="fw-normal">คัน</small></span></div>
+                                <div class="text-success border-start border-secondary ps-4 text-end"><span class="text-secondary small me-2">ยอดเงินรวม:</span><span class="fw-bold fs-5">${group.totalAmount.toLocaleString()} <small class="fw-normal">฿</small></span></div>
                                 <i class="bi bi-chevron-down text-secondary ms-3 custom-caret"></i>
                             </div>
-
                         </div>
-                        
                         ${headerEditBtn}
-
                     </div>
-
                     <div id="${cId}" class="accordion-collapse collapse" data-bs-parent="#dataAccordion">
                         <div class="accordion-body">
                             <div class="table-responsive">
                                 <table class="table table-sm table-borderless table-hover align-middle mb-0">
-                                    <thead class="bg-dark text-secondary">
-                                        <tr>
-                                            <th class="text-center" width="5%"><input class="form-check-input master-checkbox" type="checkbox" onchange="toggleAllInGroup(this, '${cId}')"></th>
-                                            <th width="30%">ทะเบียนรถ</th>
-                                            <th class="text-end pe-4" width="20%">ยอดเงิน</th>
-                                            <th class="text-center" width="25%">วันที่จ่าย</th>
-                                            <th class="text-center" width="20%">หลักฐาน</th>
-                                        </tr>
-                                    </thead>
+                                    <thead class="bg-dark text-secondary"><tr><th class="text-center" width="5%"><input class="form-check-input master-checkbox" type="checkbox" onchange="toggleAllInGroup(this, '${cId}')"></th><th width="30%">ทะเบียนรถ</th><th class="text-end pe-4" width="20%">ยอดเงิน</th><th class="text-center" width="25%">วันที่จ่าย</th><th class="text-center" width="20%">หลักฐาน</th></tr></thead>
                                     <tbody>${rows}</tbody>
                                 </table>
                             </div>
@@ -305,6 +279,7 @@
         }
     }
 
+    // ================= ระบบ Checkbox =================
     function toggleAllInGroupFromHeader(headerCb, cId) {
         let masterCb = document.querySelector(`#${cId} .master-checkbox`);
         if(masterCb) masterCb.checked = headerCb.checked;
@@ -332,28 +307,34 @@
 
     function getSelectedIds() {
         let ids = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
-        if(ids.length === 0) { alert("กรุณาติ๊กเลือกรายการก่อนครับ"); return null; }
+        if(ids.length === 0) { Swal.fire('โปรดเลือกรายการ', 'กรุณาติ๊กเลือกหน้ารายการที่ต้องการก่อนครับ', 'warning'); return null; }
         return ids;
     }
 
-    function requestSummaryPDF() {
+    // ⭐️ 2-in-1 สร้างเอกสารทั้งหมด (ใบปะหน้า + ใบรับรองเงินสด)
+    function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); if(!ids) return;
-        if(!confirm(`สร้างใบปะหน้าสรุปรายการที่เลือก ดำเนินการต่อหรือไม่?`)) return;
-        document.getElementById('loadingOverlay').classList.remove('hidden'); 
-        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateSummaryPDF', ids: ids }) }).then(res => res.json()).then(data => {
-            document.getElementById('loadingOverlay').classList.add('hidden'); 
-            if (data.status === "success") { alert("✅ สำเร็จ!"); window.open(data.url, '_blank'); } else alert("❌ ผิดพลาด: " + data.message);
-        }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
-    }
-
-    function requestGeneratePDF() {
-        const ids = getSelectedIds(); if(!ids) return;
-        if(!confirm(`สร้างใบรับรองเงินสด (แยกรายคัน) ดำเนินการต่อหรือไม่?`)) return;
-        document.getElementById('loadingOverlay').classList.remove('hidden'); 
-        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generatePDF', ids: ids }) }).then(res => res.json()).then(data => {
-            document.getElementById('loadingOverlay').classList.add('hidden'); 
-            if (data.status === "success") { alert("✅ สำเร็จ!"); window.open(data.url, '_blank'); } else alert("❌ ผิดพลาด: " + data.message);
-        }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
+        
+        Swal.fire({
+            title: 'สร้างเอกสารแบบ 2-in-1',
+            text: 'ระบบจะสร้าง "ใบปะหน้าสรุป" และ "ใบรับรองแยกคัน" ให้ในโฟลเดอร์เดียวกัน ใช้เวลาประมาณ 1-2 นาที',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'ยืนยันสร้างเอกสาร',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('loadingOverlay').classList.remove('hidden'); 
+                fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateAllPDFs', ids: ids }) }).then(res => res.json()).then(data => {
+                    document.getElementById('loadingOverlay').classList.add('hidden'); 
+                    if (data.status === "success") { 
+                        Swal.fire({ title: 'สร้างสำเร็จ!', text: 'เอกสารทั้งหมดถูกจัดเรียงในโฟลเดอร์เรียบร้อยแล้ว', icon: 'success', confirmButtonText: 'เปิดดูเอกสาร' }).then(() => { window.open(data.url, '_blank'); });
+                    } else { Swal.fire('ผิดพลาด', data.message, 'error'); }
+                }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); Swal.fire('ขัดข้อง', 'การเชื่อมต่ออินเทอร์เน็ตมีปัญหา', 'error'); });
+            }
+        });
     }
 
     function processExportChecked() {
@@ -393,7 +374,8 @@
     
     function startImport() {
         const sD = document.getElementById('setStartDate').value, eD = document.getElementById('setEndDate').value, pD = document.getElementById('setPaymentDate').value, files = document.getElementById('slipFiles').files;
-        if(!sD || !eD || !pD) return alert("โปรดระบุวันที่ให้ครบถ้วน"); if(files.length === 0) return alert("เลือกไฟล์สลิปก่อนครับ");
+        if(!sD || !eD || !pD) return Swal.fire('คำเตือน', 'โปรดระบุวันที่ให้ครบถ้วน', 'warning'); 
+        if(files.length === 0) return Swal.fire('คำเตือน', 'โปรดเลือกไฟล์สลิปก่อนครับ', 'warning');
         globalSetup = { month: document.getElementById('setMonth').value, week: document.getElementById('setWeek').value, dateRange: `${formatThaiDate(sD)} - ${formatThaiDate(eD)}`, paymentDate: formatThaiDate(pD) };
         slipQueue = Array.from(files); currentIndex = 0; document.getElementById('setupSection').classList.add('hidden'); document.getElementById('processingSection').classList.remove('hidden'); showCurrentSlip();
     }
@@ -407,7 +389,7 @@
 
     function saveData() {
         const plate = document.getElementById('inputPlate').value, amt = document.getElementById('inputAmount').value;
-        if(!plate || !amt) return alert("กรอกข้อมูลให้ครบ");
+        if(!plate || !amt) return Swal.fire('คำเตือน', 'กรุณากรอกข้อมูลให้ครบ', 'warning');
         const btn = document.getElementById('saveBtn'); btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> บันทึก...`; btn.disabled = true;
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveSlip', year: '2026', month: globalSetup.month, week: globalSetup.week, dateRange: globalSetup.dateRange, plate: plate, amount: amt, paymentDate: globalSetup.paymentDate, fileName: slipQueue[currentIndex].name, mimeType: "image/jpeg", fileBase64: currentBase64 }) }).then(res => res.json()).then(data => {
             if(data.status === "success") { sessionRecords.push({ id: data.id, plate: plate, amount: amt, date: globalSetup.paymentDate }); currentIndex++; btn.disabled = false; btn.innerHTML = `บันทึก & ถัดไป`; showCurrentSlip(); }
@@ -427,7 +409,13 @@
         const id = document.getElementById('editId').value, nPlate = document.getElementById('editPlate').value, nAmt = document.getElementById('editAmount').value, nDate = document.getElementById('editDate').value;
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'updateSlip', id: id, plate: nPlate, amount: nAmt, paymentDate: nDate }) }).then(res => res.json()).then(data => { if(data.status === "success") { const idx = sessionRecords.findIndex(x => x.id === id); sessionRecords[idx].plate = nPlate; sessionRecords[idx].amount = nAmt; sessionRecords[idx].date = nDate; modalInstance.hide(); renderSummaryTable(); } });
     }
-    function deleteRecord(id) { if(!confirm("ลบรายการนี้?")) return; fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteSlip', id: id }) }).then(res => res.json()).then(data => { if(data.status === "success") { sessionRecords = sessionRecords.filter(x => x.id !== id); renderSummaryTable(); } }); }
+    function deleteRecord(id) { 
+        Swal.fire({ title: 'ลบรายการ?', text: "ลบแล้วจะไม่สามารถกู้คืนได้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'ลบเลย!' }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteSlip', id: id }) }).then(res => res.json()).then(data => { if(data.status === "success") { sessionRecords = sessionRecords.filter(x => x.id !== id); renderSummaryTable(); } });
+            }
+        });
+    }
 </script>
 </body>
 </html>
