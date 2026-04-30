@@ -58,14 +58,11 @@
         
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h3 class="fw-bold text-gradient mb-0"><i class="bi bi-grid-1x2"></i> DASHBOARD</h3>
-            <div class="d-flex align-items-center gap-3">
-                <span id="userRoleBadge" class="badge bg-primary px-3 py-2 fw-normal"></span>
+            <div class="d-flex align-items-center gap-2">
+                <span id="userRoleBadge" class="badge bg-primary px-3 py-2 fw-normal me-2"></span>
+                <button id="btnAddSlip" class="btn btn-primary btn-sm hidden" onclick="openImportView()"><i class="bi bi-plus-circle"></i> นำเข้าสลิปใหม่</button>
                 <button class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="bi bi-power"></i> ออกจากระบบ</button>
             </div>
-        </div>
-
-        <div id="btnAddSlipContainer" class="mb-4 text-end hidden">
-            <button class="btn btn-primary px-4 py-2 shadow-sm fs-6" onclick="openImportView()"><i class="bi bi-plus-circle-fill me-2"></i> นำเข้าสลิปใหม่</button>
         </div>
 
         <div class="row mb-3">
@@ -97,7 +94,7 @@
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <span class="text-info fw-bold"><i class="bi bi-check2-all"></i> ดำเนินการกับรายการที่ "ติ๊กเลือก" (ด้านล่าง)</span>
                 <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn btn-outline-info btn-sm" onclick="requestSummaryPDF()"><i class="bi bi-file-earmark-pdf"></i> สร้างใบปะหน้าสรุป</button>
+                    <button class="btn btn-outline-info btn-sm" onclick="requestSummaryPDF()"><i class="bi bi-file-earmark-pdf"></i> พิมพ์ใบปะหน้าสรุป</button>
                     <button class="btn btn-outline-info btn-sm" onclick="requestGeneratePDF()"><i class="bi bi-file-earmark-post"></i> สร้างใบรับรองเงินสด</button>
                     <button class="btn btn-success btn-sm" onclick="processExportChecked()"><i class="bi bi-file-earmark-excel"></i> ดาวน์โหลด CSV</button>
                 </div>
@@ -173,7 +170,7 @@
             document.getElementById('dashboardView').classList.remove('hidden');
             document.getElementById('userRoleBadge').innerHTML = (currentUserRole === 'admin') ? "<i class='bi bi-person-badge'></i> Admin" : "<i class='bi bi-calculator'></i> Accounting";
             if (currentUserRole === 'admin') {
-                document.getElementById('btnAddSlipContainer').classList.remove('hidden');
+                document.getElementById('btnAddSlip').classList.remove('hidden');
                 document.getElementById('adminActionBar').classList.remove('hidden');
             }
             loadDashboardData();
@@ -186,7 +183,6 @@
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'login', username: u, password: p }) })
         .then(res => res.json()).then(data => {
             if (data.status === 'success') {
-                // บันทึก Session 7 วัน
                 localStorage.setItem('mflow_session', JSON.stringify({ role: data.role, expire: Date.now() + (7 * 24 * 60 * 60 * 1000) }));
                 checkSession();
             } else { err.className = "text-danger mt-3 fw-bold"; err.innerText = "❌ " + data.message; }
@@ -248,10 +244,10 @@
                     </tr>`; 
             });
             
-            // ⭐️ ปรับตำแหน่งปุ่มแก้ไข ให้อยู่หลังยอดเงิน ในแถวเดียวกัน
+            // ⭐️ ปุ่มแก้ไข ย้ายมาอยู่ในแถวเดียวกันกับ ยอดเงิน
             let headerEditBtn = "";
             if (currentUserRole === 'admin') {
-                headerEditBtn = `<button class="btn btn-warning btn-sm fw-bold ms-3" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไขรายการ</button>`;
+                headerEditBtn = `<button class="btn btn-warning btn-sm fw-bold ms-2" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไข</button>`;
             }
 
             container.innerHTML += `
@@ -260,12 +256,13 @@
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${cId}">
                             <div class="d-flex justify-content-between align-items-center w-100 pe-3">
                                 <div class="d-flex align-items-center">
-                                    <span class="fs-6 text-light fw-bold">${group.month} - ${group.week}</span> 
+                                    <input class="form-check-input group-checkbox me-3" type="checkbox" style="transform: scale(1.2);" onclick="event.stopPropagation(); toggleAllInGroupFromHeader(this, '${cId}')">
+                                    <span class="fs-6 text-info fw-bold">${group.month} - ${group.week}</span> 
                                     <small class="text-muted ms-2 d-none d-sm-inline">(${group.dateRange})</small>
                                 </div>
-                                <div class="d-flex align-items-center flex-wrap">
-                                    <span class="badge bg-secondary me-2">${group.items.length} คัน</span>
-                                    <span class="badge bg-success text-white px-3 py-1 rounded-pill">${group.totalAmount.toLocaleString()} ฿</span>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge bg-secondary">${group.items.length} คัน</span>
+                                    <span class="badge bg-success">${group.totalAmount.toLocaleString()} ฿</span>
                                     ${headerEditBtn}
                                 </div>
                             </div>
@@ -294,17 +291,32 @@
         }
     }
 
+    // ฟังก์ชันจัดการ Checkbox ระดับหัวกลุ่ม (หน้าสัปดาห์)
+    function toggleAllInGroupFromHeader(headerCheckbox, groupCollapseId) {
+        const master = document.querySelector(`#${groupCollapseId} .master-checkbox`);
+        if(master) master.checked = headerCheckbox.checked;
+        const checkboxes = document.querySelectorAll(`#${groupCollapseId} .item-checkbox`);
+        checkboxes.forEach(cb => cb.checked = headerCheckbox.checked);
+    }
+
     function toggleAllInGroup(masterCheckbox, groupCollapseId) {
         const checkboxes = document.querySelectorAll(`#${groupCollapseId} .item-checkbox`);
         checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+        const headerMaster = document.querySelector(`button[data-bs-target="#${groupCollapseId}"] .group-checkbox`);
+        if(headerMaster) { headerMaster.checked = masterCheckbox.checked; headerMaster.indeterminate = false; }
     }
     
     function checkMasterToggle(groupCollapseId) {
         const master = document.querySelector(`#${groupCollapseId} .master-checkbox`);
+        const headerMaster = document.querySelector(`button[data-bs-target="#${groupCollapseId}"] .group-checkbox`);
         const total = document.querySelectorAll(`#${groupCollapseId} .item-checkbox`).length;
         const checked = document.querySelectorAll(`#${groupCollapseId} .item-checkbox:checked`).length;
-        master.checked = (total > 0 && total === checked);
-        master.indeterminate = (checked > 0 && checked < total);
+        
+        let isAllChecked = (total > 0 && total === checked);
+        let isSomeChecked = (checked > 0 && checked < total);
+
+        if(master) { master.checked = isAllChecked; master.indeterminate = isSomeChecked; }
+        if(headerMaster) { headerMaster.checked = isAllChecked; headerMaster.indeterminate = isSomeChecked; }
     }
 
     function getSelectedIds() {
@@ -316,7 +328,7 @@
         return checkedIds;
     }
 
-    // 📑 สร้าง PDF ใบปะหน้าสรุป (Checkbox)
+    // สร้าง PDF ใบปะหน้าสรุป (Checkbox)
     function requestSummaryPDF() {
         const checkedIds = getSelectedIds();
         if(!checkedIds) return;
@@ -331,7 +343,7 @@
         }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
     }
 
-    // 📄 สร้าง PDF ใบรับรองเงินสด (Checkbox)
+    // สร้าง PDF ใบรับรองเงินสด (Checkbox)
     function requestGeneratePDF() {
         const checkedIds = getSelectedIds();
         if(!checkedIds) return;
@@ -346,7 +358,7 @@
         }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
     }
 
-    // 📥 ดาวน์โหลด CSV (Checkbox)
+    // ดาวน์โหลด CSV (Checkbox)
     function processExportChecked() {
         const checkedIds = getSelectedIds();
         if(!checkedIds) return;
