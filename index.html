@@ -44,7 +44,7 @@
     </div>
 
     <div id="loginView" class="container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
-        <div class="card p-5 text-center" style="max-width: 400px; width: 100%;">
+        <div class="card p-5 text-center shadow-lg" style="max-width: 400px; width: 100%;">
             <div class="mb-2 fs-1 text-gradient"><i class="bi bi-rocket-takeoff"></i></div>
             <h3 class="mb-4 fw-bold text-gradient">M-FLOW LOGIN</h3>
             <div class="mb-3 text-start"><label class="form-label text-secondary small">USERNAME</label><input type="text" id="username" class="form-control" onkeypress="if(event.key==='Enter') doLogin()"></div>
@@ -77,15 +77,15 @@
 
         <div class="row mb-3">
             <div class="col-md-6 mb-2">
-                <div class="card p-4 h-100 border-0 bg-dark bg-opacity-50">
+                <div class="card p-3 h-100 border-0 bg-dark bg-opacity-50">
                     <div class="text-secondary small fw-bold mb-1">รายการทั้งหมด (ที่กรอง)</div>
-                    <div class="fs-3 fw-bold text-light" id="statTotalItems">0 <span class="fs-6 fw-normal text-muted">รายการ</span></div>
+                    <div class="fs-4 fw-bold text-light" id="statTotalItems">0 <span class="fs-6 fw-normal text-muted">รายการ</span></div>
                 </div>
             </div>
             <div class="col-md-6 mb-2">
-                <div class="card p-4 h-100 border-0 bg-dark bg-opacity-50">
+                <div class="card p-3 h-100 border-0 bg-dark bg-opacity-50">
                     <div class="text-secondary small fw-bold mb-1">ยอดเงินรวม (ที่กรอง)</div>
-                    <div class="fs-3 fw-bold text-success" id="statTotalAmount">0 <span class="fs-6 fw-normal text-muted">บาท</span></div>
+                    <div class="fs-4 fw-bold text-success" id="statTotalAmount">0 <span class="fs-6 fw-normal text-muted">บาท</span></div>
                 </div>
             </div>
         </div>
@@ -167,7 +167,9 @@
             document.getElementById('loginView').classList.add('hidden'); 
             document.getElementById('dashboardView').classList.remove('hidden');
             document.getElementById('userRoleBadge').innerHTML = (currentUserRole === 'admin') ? "<i class='bi bi-person-badge'></i> Admin" : "<i class='bi bi-calculator'></i> บัญชี";
-            if (currentUserRole === 'admin') document.getElementById('adminActionBar').classList.remove('hidden');
+            if (currentUserRole === 'admin') {
+                document.getElementById('adminActionBar').classList.remove('hidden');
+            }
             loadDashboardData();
         }
     }
@@ -236,32 +238,34 @@
                     </tr>`; 
             });
             
-            // ⭐️ ปุ่มแก้ไข บังคับให้อยู่ติดกับ ยอดเงิน แน่นอน 100%
+            // ⭐️ ลบพื้นหลังของ "คัน" และ "ยอดเงิน" ออก, ปรับฟอนต์ให้ใหญ่ขึ้น, และบังคับบรรทัดเดียวด้วย Flex
             let headerEditBtn = "";
             if (currentUserRole === 'admin') {
-                headerEditBtn = `<button class="btn btn-warning btn-sm fw-bold ms-2 px-3" onclick="openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไข</button>`;
+                headerEditBtn = `<button class="btn btn-warning btn-sm fw-bold ms-3 px-3 py-1" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไข</button>`;
             }
 
-            // ⭐️ โครงสร้างใหม่ แยกปุ่มและ Checkbox ออกจาก Accordion Button เด็ดขาด ไม่มีการตกบรรทัด
             container.innerHTML += `
                 <div class="accordion-item">
-                    <div class="accordion-header d-flex flex-nowrap align-items-center pe-3">
+                    <div class="accordion-header d-flex align-items-center pe-3 bg-dark" style="border-radius: 8px;">
                         
                         <div class="ps-3 pe-2 py-3 border-end border-secondary">
                             <input class="form-check-input group-checkbox m-0" type="checkbox" onchange="toggleAllInGroupFromHeader(this, '${cId}')" style="transform: scale(1.3); cursor: pointer;">
                         </div>
                         
-                        <button class="accordion-button collapsed bg-transparent shadow-none px-3 py-3 border-0 flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#${cId}">
-                            <span class="fs-6 text-info fw-bold">${group.month} - ${group.week}</span> 
-                            <small class="text-muted ms-2 d-none d-md-inline">(${group.dateRange})</small>
-                        </button>
-                        
-                        <div class="d-flex align-items-center gap-2 flex-nowrap ms-auto ps-2">
-                            <span class="badge bg-secondary px-2 py-1">${group.items.length} คัน</span>
-                            <span class="badge bg-success px-2 py-1 fs-6">${group.totalAmount.toLocaleString()} ฿</span>
-                            ${headerEditBtn}
-                        </div>
+                        <button class="accordion-button collapsed bg-transparent shadow-none px-3 py-3 border-0 flex-grow-1 d-flex flex-row align-items-center justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#${cId}" style="white-space: nowrap;">
+                            
+                            <div class="d-flex align-items-center overflow-hidden text-truncate">
+                                <span class="fs-6 text-info fw-bold">${group.month} - ${group.week}</span> 
+                                <small class="text-muted ms-2 d-none d-md-inline text-truncate">(${group.dateRange})</small>
+                            </div>
 
+                            <div class="d-flex align-items-center ms-3 flex-nowrap flex-shrink-0" style="white-space: nowrap;">
+                                <span class="text-light fw-bold fs-6 me-3">${group.items.length} คัน</span>
+                                <span class="text-success fw-bold fs-5">${group.totalAmount.toLocaleString()} ฿</span>
+                                ${headerEditBtn}
+                            </div>
+
+                        </button>
                     </div>
                     <div id="${cId}" class="accordion-collapse collapse" data-bs-parent="#dataAccordion">
                         <div class="accordion-body">
@@ -286,7 +290,6 @@
         }
     }
 
-    // ================= ระบบ Checkbox =================
     function toggleAllInGroupFromHeader(headerCb, cId) {
         let masterCb = document.querySelector(`#${cId} .master-checkbox`);
         if(masterCb) masterCb.checked = headerCb.checked;
@@ -318,7 +321,6 @@
         return ids;
     }
 
-    // ================= ฟังก์ชันจัดการเอกสาร =================
     function requestSummaryPDF() {
         const ids = getSelectedIds(); if(!ids) return;
         if(!confirm(`สร้างใบปะหน้าสรุปรายการที่เลือก ดำเนินการต่อหรือไม่?`)) return;
