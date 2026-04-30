@@ -50,7 +50,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
     background: #0f172a; 
 }
 
-/* ================= Accordion (รื้อโครงสร้างใหม่ บังคับไม่ให้ปุ่มตกบรรทัด) ================= */
+/* ================= Accordion ================= */
 .accordion-item { 
     background-color: #1e293b; 
     border: 1px solid #334155; 
