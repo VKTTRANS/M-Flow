@@ -18,8 +18,8 @@
     <datalist id="plateList"></datalist>
 
     <div id="loadingOverlay" class="hidden">
-        <div class="spinner-border text-info" style="width: 4rem; height: 4rem;" role="status"></div>
-        <h3 class="mt-4 text-info fw-bold">กำลังสร้างเอกสาร PDF...</h3>
+        <div class="spinner-border text-info" style="width: 3rem; height: 3rem;" role="status"></div>
+        <h4 class="mt-4 text-info fw-bold">กำลังสร้างเอกสาร PDF...</h4>
         <p class="text-secondary text-center">ระบบกำลังจัดเรียงข้อมูลและวางรูปสลิป<br>กรุณารอสักครู่ (อาจใช้เวลา 1-2 นาที)</p>
     </div>
 
@@ -27,121 +27,128 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-light border-secondary">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-info fw-bold"><i class="bi bi-pencil-square"></i> แก้ไขข้อมูล</h5>
+                    <h6 class="modal-title text-info fw-bold"><i class="bi bi-pencil-square"></i> แก้ไขข้อมูล</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="editId">
-                    <div class="mb-3">
-                        <label class="form-label text-secondary">ทะเบียนรถ</label>
-                        <input type="text" id="editPlate" class="form-control" list="plateList">
-                    </div>
-                    <div class="mb-3"><label class="form-label text-secondary">จำนวนเงิน</label><input type="number" id="editAmount" class="form-control"></div>
-                    <div class="mb-3"><label class="form-label text-secondary">วันที่จ่ายจริง (DD/MM/YY)</label><input type="text" id="editDate" class="form-control"></div>
+                    <div class="mb-3"><label class="form-label text-secondary small">ทะเบียนรถ</label><input type="text" id="editPlate" class="form-control" list="plateList"></div>
+                    <div class="mb-3"><label class="form-label text-secondary small">จำนวนเงิน</label><input type="number" id="editAmount" class="form-control"></div>
+                    <div class="mb-3"><label class="form-label text-secondary small">วันที่จ่ายจริง (DD/MM/YY)</label><input type="text" id="editDate" class="form-control"></div>
                 </div>
                 <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="button" class="btn btn-primary" onclick="saveEdit()">บันทึกการแก้ไข</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="saveEdit()">บันทึกการแก้ไข</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="loginView" class="container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
-        <div class="card p-4 text-center" style="max-width: 400px; width: 100%;">
+        <div class="card p-5 text-center shadow-lg" style="max-width: 400px; width: 100%;">
             <div class="mb-2 fs-1 text-gradient"><i class="bi bi-rocket-takeoff"></i></div>
-            <h2 class="mb-4 fw-bold text-gradient">M-FLOW LOGIN</h2>
-            <div class="mb-3 text-start"><label class="form-label text-secondary">USERNAME</label><input type="text" id="username" class="form-control" onkeypress="if(event.key==='Enter') doLogin()"></div>
-            <div class="mb-4 text-start"><label class="form-label text-secondary">PASSWORD</label><input type="password" id="password" class="form-control" onkeypress="if(event.key==='Enter') doLogin()"></div>
-            <button class="btn btn-primary w-100 py-2 fs-5" onclick="doLogin()">เข้าสู่ระบบ</button>
-            <p id="loginError" class="text-danger mt-3 hidden"></p>
+            <h3 class="mb-4 fw-bold text-gradient">M-FLOW LOGIN</h3>
+            <div class="mb-3 text-start"><label class="form-label text-secondary small">USERNAME</label><input type="text" id="username" class="form-control" onkeypress="if(event.key==='Enter') doLogin()"></div>
+            <div class="mb-4 text-start"><label class="form-label text-secondary small">PASSWORD</label><input type="password" id="password" class="form-control" onkeypress="if(event.key==='Enter') doLogin()"></div>
+            <button class="btn btn-primary w-100 py-2" onclick="doLogin()">เข้าสู่ระบบ</button>
+            <p id="loginError" class="text-danger mt-3 hidden small"></p>
         </div>
     </div>
 
-    <div id="dashboardView" class="container py-5 hidden">
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
-            <h2 class="fw-bold text-gradient mb-0"><i class="bi bi-grid-1x2"></i> DASHBOARD</h2>
-            <div>
-                <span id="userRoleBadge" class="badge bg-primary me-3 px-3 py-2 fs-6 rounded-pill"></span>
-                <button class="btn btn-outline-danger" onclick="location.reload()"><i class="bi bi-power"></i> ออกจากระบบ</button>
+    <div id="dashboardView" class="container py-4 hidden">
+        
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="fw-bold text-gradient mb-0"><i class="bi bi-grid-1x2"></i> DASHBOARD</h3>
+            <div class="d-flex align-items-center gap-3">
+                <span id="userRoleBadge" class="badge bg-primary px-3 py-2 fw-normal"></span>
+                <button class="btn btn-outline-danger btn-sm" onclick="location.reload()"><i class="bi bi-power"></i> ออกจากระบบ</button>
             </div>
         </div>
         
-        <div class="row mb-4">
-            <div class="col-md-4 mb-3"><div class="card p-4 h-100 border-top border-info border-4"><div class="text-secondary small fw-bold mb-1">รายการทั้งหมด</div><div class="h2 fw-bold text-light" id="statTotalItems">0</div></div></div>
-            <div class="col-md-4 mb-3"><div class="card p-4 h-100 border-top border-success border-4"><div class="text-secondary small fw-bold mb-1">ยอดเงินรวม</div><div class="h2 fw-bold text-success" id="statTotalAmount">0 ฿</div></div></div>
-            <div class="col-md-4 mb-3 d-flex flex-column justify-content-center gap-3">
-                <button class="btn btn-success py-2 shadow-sm" onclick="exportCSV()"><i class="bi bi-file-earmark-excel"></i> ดาวน์โหลด CSV แบบดิบ</button>
-                <button id="btnAddSlip" class="btn btn-primary py-2 shadow-sm hidden" onclick="openImportView()"><i class="bi bi-plus-circle"></i> นำเข้าสลิปใหม่</button>
+        <div class="row mb-3">
+            <div class="col-md-3 mb-2">
+                <div class="card p-3 h-100 border-top border-info border-3">
+                    <div class="text-secondary small fw-bold mb-1">รายการทั้งหมด (ที่กรอง)</div>
+                    <div class="fs-4 fw-bold text-light" id="statTotalItems">0</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card p-3 h-100 border-top border-success border-3">
+                    <div class="text-secondary small fw-bold mb-1">ยอดเงินรวม (ที่กรอง)</div>
+                    <div class="fs-4 fw-bold text-success" id="statTotalAmount">0 ฿</div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-2">
+                <div class="card p-3 h-100 border-secondary d-flex flex-column justify-content-center">
+                    <div class="text-secondary small fw-bold mb-2"><i class="bi bi-check2-square"></i> ดำเนินการกับรายการที่เลือก (ติ๊กถูกหน้ารายการ)</div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-info flex-fill" onclick="processPrintChecked()"><i class="bi bi-printer"></i> พิมพ์ใบปะหน้าสรุป</button>
+                        <button class="btn btn-success flex-fill" onclick="processExportChecked()"><i class="bi bi-file-earmark-excel"></i> ดาวน์โหลด CSV</button>
+                        <button id="btnAddSlip" class="btn btn-primary flex-fill hidden" onclick="openImportView()"><i class="bi bi-plus-circle"></i> นำเข้าสลิปใหม่</button>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div class="card p-3 mb-4 border-secondary">
+        <div class="card p-3 mb-3 border-secondary bg-dark">
             <div class="row g-2 align-items-end">
                 <div class="col-md-2"><label class="form-label text-secondary small mb-1">ปี</label><select id="filterYear" class="form-select form-select-sm" onchange="applyFilters()"><option value="">ทั้งหมด</option><option value="2026">2026</option></select></div>
-                <div class="col-md-2"><label class="form-label text-secondary small mb-1">เดือน</label><select id="filterMonth" class="form-select form-select-sm" onchange="applyFilters()"><option value="">ทั้งหมด</option><option value="01_Jan">มกราคม</option><option value="02_Feb">กุมภาพันธ์</option><option value="03_Mar">มีนาคม</option><option value="04_Apr">เมษายน</option></select></div>
+                <div class="col-md-2"><label class="form-label text-secondary small mb-1">เดือน</label><select id="filterMonth" class="form-select form-select-sm" onchange="applyFilters()"><option value="">ทั้งหมด</option><option value="01_Jan">มกราคม</option><option value="02_Feb">กุมภาพันธ์</option><option value="03_Mar">มีนาคม</option><option value="04_Apr">เมษายน</option><option value="05_May">พฤษภาคม</option><option value="06_Jun">มิถุนายน</option><option value="07_Jul">กรกฎาคม</option><option value="08_Aug">สิงหาคม</option><option value="09_Sep">กันยายน</option><option value="10_Oct">ตุลาคม</option><option value="11_Nov">พฤศจิกายน</option><option value="12_Dec">ธันวาคม</option></select></div>
                 <div class="col-md-2"><label class="form-label text-secondary small mb-1">สัปดาห์</label><select id="filterWeek" class="form-select form-select-sm" onchange="applyFilters()"><option value="">ทั้งหมด</option><option value="Week 1">สัปดาห์ที่ 1</option><option value="Week 2">สัปดาห์ที่ 2</option><option value="Week 3">สัปดาห์ที่ 3</option><option value="Week 4">สัปดาห์ที่ 4</option><option value="Week 5">สัปดาห์ที่ 5</option></select></div>
-                <div class="col-md-4"><label class="form-label text-info fw-bold small mb-1"><i class="bi bi-search"></i> ค้นหาทะเบียนรถ</label><input type="text" id="filterPlate" class="form-control form-control-sm" placeholder="เช่น กข 1234" onkeyup="applyFilters()"></div>
-                <div class="col-md-2"><button class="btn btn-outline-secondary btn-sm w-100" onclick="resetFilters()">ล้างค่า</button></div>
+                <div class="col-md-4"><label class="form-label text-info fw-bold small mb-1"><i class="bi bi-search"></i> ค้นหาทะเบียนรถ</label><input type="text" id="filterPlate" class="form-control form-control-sm" placeholder="พิมพ์เพื่อค้นหา..." onkeyup="applyFilters()"></div>
+                <div class="col-md-2"><button class="btn btn-outline-secondary btn-sm w-100 py-1" onclick="resetFilters()">ล้างค่า</button></div>
             </div>
         </div>
 
-        <div id="dataAccordion" class="accordion mb-5"><div class="text-center text-secondary py-5"><div class="spinner-border text-primary mb-3"></div><br>กำลังโหลดข้อมูล...</div></div>
+        <div id="dataAccordion" class="accordion mb-5"><div class="text-center text-secondary py-5"><div class="spinner-border spinner-border-sm text-primary mb-2"></div><br>กำลังโหลดข้อมูล...</div></div>
     </div>
 
-    <div id="importView" class="container py-5 hidden">
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
-            <h2 class="fw-bold text-gradient mb-0" id="importTitle"><i class="bi bi-cloud-arrow-up"></i> IMPORT SLIPS</h2>
-            <button class="btn btn-outline-secondary" onclick="backToDashboard()"><i class="bi bi-arrow-left"></i> กลับหน้าหลัก</button>
+    <div id="importView" class="container py-4 hidden">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold text-gradient mb-0" id="importTitle"><i class="bi bi-cloud-arrow-up"></i> IMPORT SLIPS</h4>
+            <button class="btn btn-outline-secondary btn-sm" onclick="backToDashboard()"><i class="bi bi-arrow-left"></i> กลับหน้าหลัก</button>
         </div>
 
-        <div id="setupSection" class="card p-4 mx-auto" style="max-width: 700px;">
-            <div class="row g-4">
-                <div class="col-md-6"><label class="form-label text-info fw-bold">เดือนของรอบเบิก</label><select id="setMonth" class="form-select form-select-lg" onchange="lookupDateRange()"><option value="01_Jan">มกราคม</option><option value="02_Feb">กุมภาพันธ์</option><option value="03_Mar">มีนาคม</option><option value="04_Apr">เมษายน</option><option value="05_May">พฤษภาคม</option><option value="06_Jun">มิถุนายน</option><option value="07_Jul">กรกฎาคม</option><option value="08_Aug">สิงหาคม</option><option value="09_Sep">กันยายน</option><option value="10_Oct">ตุลาคม</option><option value="11_Nov">พฤศจิกายน</option><option value="12_Dec">ธันวาคม</option></select></div>
-                <div class="col-md-6"><label class="form-label text-info fw-bold">สัปดาห์ที่</label><select id="setWeek" class="form-select form-select-lg" onchange="lookupDateRange()"><option value="Week 1">สัปดาห์ที่ 1</option><option value="Week 2">สัปดาห์ที่ 2</option><option value="Week 3">สัปดาห์ที่ 3</option><option value="Week 4">สัปดาห์ที่ 4</option><option value="Week 5">สัปดาห์ที่ 5</option></select></div>
-                <div class="col-12 border-bottom border-secondary pb-2 d-flex justify-content-between align-items-center"><span class="text-secondary small fw-bold">ช่วงวันที่ของสัปดาห์นี้</span><span id="lookupStatus" class="status-badge bg-dark text-secondary">ใหม่ (ระบุวันที่)</span></div>
-                <div class="col-md-6"><label class="form-label text-secondary fw-bold">ตั้งแต่วันที่</label><input type="date" id="setStartDate" class="form-control form-control-lg"></div>
-                <div class="col-md-6"><label class="form-label text-secondary fw-bold">ถึงวันที่</label><input type="date" id="setEndDate" class="form-control form-control-lg"></div>
-                <div class="col-12 pt-3 border-top border-secondary mt-4"><label class="form-label text-warning fw-bold">วันที่ชำระเงินของสลิปชุดนี้</label><input type="date" id="setPaymentDate" class="form-control form-control-lg border-warning"></div>
-                <div class="col-12 mt-4 text-center p-4 border border-secondary border-dashed rounded bg-dark bg-opacity-25"><label class="form-label fw-bold text-light d-block mb-3">อัปโหลดสลิปที่ชำระในวันนี้</label><input type="file" id="slipFiles" class="form-control form-control-lg" multiple accept="image/*"></div>
-                <button class="btn btn-primary w-100 mt-4 py-3 fs-5 fw-bold" onclick="startImport()">เริ่มการนำเข้า</button>
+        <div id="setupSection" class="card p-4 mx-auto" style="max-width: 600px;">
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label text-info fw-bold small mb-1">เดือน</label><select id="setMonth" class="form-select" onchange="lookupDateRange()"><option value="01_Jan">มกราคม</option><option value="02_Feb">กุมภาพันธ์</option><option value="03_Mar">มีนาคม</option><option value="04_Apr">เมษายน</option><option value="05_May">พฤษภาคม</option><option value="06_Jun">มิถุนายน</option><option value="07_Jul">กรกฎาคม</option><option value="08_Aug">สิงหาคม</option><option value="09_Sep">กันยายน</option><option value="10_Oct">ตุลาคม</option><option value="11_Nov">พฤศจิกายน</option><option value="12_Dec">ธันวาคม</option></select></div>
+                <div class="col-md-6"><label class="form-label text-info fw-bold small mb-1">สัปดาห์</label><select id="setWeek" class="form-select" onchange="lookupDateRange()"><option value="Week 1">สัปดาห์ที่ 1</option><option value="Week 2">สัปดาห์ที่ 2</option><option value="Week 3">สัปดาห์ที่ 3</option><option value="Week 4">สัปดาห์ที่ 4</option><option value="Week 5">สัปดาห์ที่ 5</option></select></div>
+                <div class="col-12 border-bottom border-secondary pb-1 d-flex justify-content-between align-items-center mt-3"><span class="text-secondary small fw-bold">ช่วงวันที่</span><span id="lookupStatus" class="status-badge bg-dark text-secondary">ใหม่ (ระบุวันที่)</span></div>
+                <div class="col-md-6"><label class="form-label text-secondary small mb-1">ตั้งแต่วันที่</label><input type="date" id="setStartDate" class="form-control"></div>
+                <div class="col-md-6"><label class="form-label text-secondary small mb-1">ถึงวันที่</label><input type="date" id="setEndDate" class="form-control"></div>
+                <div class="col-12 mt-3"><label class="form-label text-warning fw-bold small mb-1">วันที่ชำระเงิน</label><input type="date" id="setPaymentDate" class="form-control border-warning"></div>
+                <div class="col-12 mt-3 p-3 border border-secondary border-dashed rounded bg-dark"><label class="form-label fw-bold text-light small d-block mb-2">เลือกสลิปที่ชำระในวันนี้</label><input type="file" id="slipFiles" class="form-control form-control-sm" multiple accept="image/*"></div>
+                <div class="col-12 mt-2"><button class="btn btn-primary w-100" onclick="startImport()">เริ่มการนำเข้า</button></div>
             </div>
         </div>
 
-        <div id="processingSection" class="card p-4 hidden mx-auto" style="max-width: 1000px;">
+        <div id="processingSection" class="card p-4 hidden mx-auto" style="max-width: 800px;">
             <div class="row align-items-center">
-                <div class="col-md-7 text-center">
-                    <img id="slipImagePreview" class="slip-preview mb-3 shadow" src="">
-                    <br>
-                    <h5 id="counterBadge" class="badge bg-primary fs-5 px-4 py-2 rounded-pill">ใบที่ 0 / 0</h5>
+                <div class="col-md-6 text-center">
+                    <img id="slipImagePreview" class="slip-preview mb-2 shadow" src="">
+                    <h6 id="counterBadge" class="badge bg-primary px-3 py-1 rounded-pill">ใบที่ 0 / 0</h6>
                 </div>
-                <div class="col-md-5 px-4 mt-4 mt-md-0">
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-info fs-5">ทะเบียนรถ</label>
-                        <input type="text" id="inputPlate" class="form-control form-control-lg text-light" list="plateList" placeholder="พิมพ์เลข 4 ตัวท้าย">
-                    </div>
-                    <div class="mb-5">
-                        <label class="form-label fw-bold text-info fs-5">จำนวนเงิน</label>
-                        <input type="number" id="inputAmount" class="form-control form-control-lg text-success fw-bold" placeholder="ระบุจำนวนเงิน">
-                    </div>
-                    <button id="saveBtn" class="btn btn-success w-100 py-3 fs-5 shadow" onclick="saveData()">บันทึก & ถัดไป</button>
+                <div class="col-md-6 px-3">
+                    <div class="mb-3"><label class="form-label fw-bold text-info small mb-1">ทะเบียนรถ</label><input type="text" id="inputPlate" class="form-control" list="plateList" placeholder="พิมพ์เลข 4 ตัวท้าย"></div>
+                    <div class="mb-4"><label class="form-label fw-bold text-info small mb-1">จำนวนเงิน</label><input type="number" id="inputAmount" class="form-control text-success fw-bold"></div>
+                    <button id="saveBtn" class="btn btn-success w-100 py-2 shadow-sm" onclick="saveData()">บันทึก & ถัดไป</button>
                 </div>
             </div>
         </div>
 
         <div id="importSummaryView" class="card p-4 hidden mx-auto" style="max-width: 800px;">
-            <h3 class="text-center text-gradient mb-4"><i class="bi bi-search"></i> ตรวจสอบความถูกต้อง / แก้ไขข้อมูล</h3>
-            <div class="row mb-4 text-center">
-                <div class="col-6"><div class="summary-box shadow-sm"><small class="text-secondary">จำนวนคัน</small><div class="h2 fw-bold text-info mt-2" id="sumCount">0</div></div></div>
-                <div class="col-6"><div class="summary-box shadow-sm"><small class="text-secondary">รวมเงิน</small><div class="h2 fw-bold text-success mt-2" id="sumAmount">0 ฿</div></div></div>
+            <h5 class="text-center text-gradient mb-3"><i class="bi bi-search"></i> ตรวจสอบความถูกต้อง / แก้ไขข้อมูล</h5>
+            <div class="row mb-3 text-center">
+                <div class="col-6"><div class="summary-box shadow-sm p-2"><small class="text-secondary d-block">จำนวนคัน</small><span class="fs-4 fw-bold text-info" id="sumCount">0</span></div></div>
+                <div class="col-6"><div class="summary-box shadow-sm p-2"><small class="text-secondary d-block">รวมเงิน</small><span class="fs-4 fw-bold text-success" id="sumAmount">0 ฿</span></div></div>
             </div>
-            <div class="table-responsive mb-4 rounded border border-secondary" style="max-height: 350px; overflow-y: auto;">
+            <div class="table-responsive mb-3 rounded border border-secondary" style="max-height: 300px; overflow-y: auto;">
                 <table class="table table-borderless table-hover table-sm text-center align-middle mb-0">
                     <thead class="bg-dark text-secondary sticky-top"><tr class="border-bottom border-secondary"><th>ทะเบียน</th><th>ยอดเงิน</th><th>วันที่</th><th class="text-end pe-3">จัดการ</th></tr></thead>
                     <tbody id="summaryTableBody"></tbody>
                 </table>
             </div>
-            <button class="btn btn-primary w-100 py-3 fs-5 shadow" onclick="backToDashboard()"><i class="bi bi-check-circle"></i> ยืนยันยอด กลับไปหน้าหลัก</button>
+            <button class="btn btn-primary w-100 py-2" onclick="backToDashboard()"><i class="bi bi-check-circle"></i> ยืนยันยอด กลับไปหน้าหลัก</button>
         </div>
     </div>
 
@@ -151,6 +158,16 @@
 
     function formatThaiDate(dateStr) { return dateStr ? `${dateStr.split('-')[2]}/${dateStr.split('-')[1]}/${dateStr.split('-')[0].substring(2)}` : ""; }
     function reverseFormatDate(thaiDate) { return thaiDate ? `20${thaiDate.split('/')[2]}-${thaiDate.split('/')[1]}-${thaiDate.split('/')[0]}` : ""; }
+
+    // ฟังก์ชันช่วยจัดการรูปแบบวันที่แบบ ISO (กันวันที่เพี้ยน)
+    function displaySafeDate(d) {
+        if (!d) return "-";
+        if (d.includes("T")) {
+            let dateObj = new Date(d);
+            return dateObj.toLocaleDateString('en-GB'); // ได้ออกมาเป็น DD/MM/YYYY
+        }
+        return d;
+    }
 
     function doLogin() {
         const u = document.getElementById('username').value, p = document.getElementById('password').value, err = document.getElementById('loginError');
@@ -172,10 +189,8 @@
             if (data.status === "success") { 
                 appData = data.data; 
                 applyFilters(); 
-                
                 if (data.plates && data.plates.length > 0) {
-                    const dl = document.getElementById('plateList');
-                    dl.innerHTML = "";
+                    const dl = document.getElementById('plateList'); dl.innerHTML = "";
                     data.plates.forEach(p => dl.innerHTML += `<option value="${p}">`);
                 }
             }
@@ -194,7 +209,7 @@
 
     function renderGroupedAccordion(dataArray) {
         const container = document.getElementById('dataAccordion'); container.innerHTML = "";
-        if (dataArray.length === 0) return container.innerHTML = `<div class="text-center text-secondary py-5"><i class="bi bi-inbox fs-1"></i><br>ไม่พบข้อมูลที่ค้นหา</div>`;
+        if (dataArray.length === 0) return container.innerHTML = `<div class="text-center text-secondary py-5"><i class="bi bi-inbox fs-1"></i><br>ไม่พบข้อมูล</div>`;
         
         let groupedData = {};
         dataArray.forEach(row => {
@@ -206,48 +221,58 @@
         let idx = 0;
         for (const key in groupedData) {
             const group = groupedData[key]; const cId = `collapse_${idx}`; let rows = "";
-            group.items.forEach(item => { rows += `<tr class="border-bottom border-secondary"><td class="text-light fw-bold ps-4">${item.plate}</td><td class="text-success fw-bold">${item.amount} ฿</td><td class="text-light">${item.paymentDate}</td><td class="text-center pe-4"><a href="${item.url}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-3">สลิป</a></td></tr>`; });
             
-            let adminActions = "";
+            group.items.forEach(item => { 
+                let safeDate = displaySafeDate(item.paymentDate);
+                rows += `
+                    <tr class="border-bottom border-secondary">
+                        <td class="text-center"><input class="form-check-input item-checkbox" type="checkbox" value="${item.id}" onchange="checkMasterToggle('${cId}')"></td>
+                        <td class="text-light fw-bold">${item.plate}</td>
+                        <td class="text-success fw-bold text-end pe-4">${item.amount} ฿</td>
+                        <td class="text-light text-center">${safeDate}</td>
+                        <td class="text-center"><a href="${item.url}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-3 py-0">ดูสลิป</a></td>
+                    </tr>`; 
+            });
+            
+            // ปุ่มจัดการ PDF และแก้ไข (ย้ายมาอยู่บนหัว Accordion)
+            let headerActions = "";
             if (currentUserRole === 'admin') {
-                adminActions = `
-                    <div class="bg-dark p-3 text-end border-bottom border-secondary d-flex justify-content-end gap-2 flex-wrap">
-                        <button class="btn btn-outline-info btn-sm shadow-sm fw-bold" onclick="printSummaryTable('${group.month}', '${group.week}')"><i class="bi bi-printer"></i> พิมพ์ใบสรุปรายการ</button>
-                        <button class="btn btn-warning btn-sm shadow-sm fw-bold" onclick="openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square"></i> แก้ไขรายการในรอบนี้</button>
-                        <button class="btn btn-primary btn-sm shadow-sm fw-bold" onclick="requestGeneratePDF('${group.month}', '${group.week}')"><i class="bi bi-file-earmark-pdf"></i> สร้างเอกสาร PDF สรุปส่งบัญชี</button>
-                    </div>`;
-            } else {
-                // บัญชี (Viewer) ก็ให้มีสิทธิ์กดพิมพ์สรุปรายการดูได้
-                adminActions = `
-                    <div class="bg-dark p-3 text-end border-bottom border-secondary">
-                        <button class="btn btn-outline-info btn-sm shadow-sm fw-bold" onclick="printSummaryTable('${group.month}', '${group.week}')"><i class="bi bi-printer"></i> พิมพ์ใบสรุปรายการ</button>
+                headerActions = `
+                    <div class="d-flex gap-2 ms-3 me-2">
+                        <button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); openEditBatch('${group.month}', '${group.week}')">แก้ไขรอบนี้</button>
+                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); requestGeneratePDF('${group.month}', '${group.week}')">สร้างใบรับรองเงินสด</button>
                     </div>`;
             }
 
-            // จัด Layout แถบให้กระจายตัวสวยงาม
             container.innerHTML += `
                 <div class="accordion-item">
                     <h2 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${cId}">
-                            <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                                <div>
-                                    <span class="fs-5 text-info fw-bold">${group.month} - ${group.week}</span> 
+                            <div class="d-flex justify-content-between align-items-center w-100">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-6 text-info fw-bold">${group.month} - ${group.week}</span> 
                                     <small class="text-muted ms-2 d-none d-sm-inline">(${group.dateRange})</small>
                                 </div>
-                                <div class="text-end flex-shrink-0">
-                                    <span class="badge bg-secondary me-2">${group.items.length} รายการ</span>
-                                    <span class="badge bg-success fs-6">${group.totalAmount.toLocaleString()} ฿</span>
+                                <div class="d-flex align-items-center flex-wrap gap-2">
+                                    ${headerActions}
+                                    <span class="badge bg-secondary ms-2">${group.items.length} คัน</span>
+                                    <span class="badge bg-success">${group.totalAmount.toLocaleString()} ฿</span>
                                 </div>
                             </div>
                         </button>
                     </h2>
                     <div id="${cId}" class="accordion-collapse collapse" data-bs-parent="#dataAccordion">
                         <div class="accordion-body">
-                            ${adminActions}
                             <div class="table-responsive">
-                                <table class="table table-borderless table-hover align-middle mb-0">
-                                    <thead class="bg-secondary bg-opacity-25 text-light">
-                                        <tr><th class="ps-4 py-3">ทะเบียนรถ</th><th class="py-3">ยอดเงิน</th><th class="py-3">วันที่จ่าย</th><th class="text-center pe-4 py-3">หลักฐาน</th></tr>
+                                <table class="table table-sm table-borderless table-hover align-middle mb-0">
+                                    <thead class="bg-dark text-secondary">
+                                        <tr>
+                                            <th class="text-center" width="5%"><input class="form-check-input master-checkbox" type="checkbox" onchange="toggleAllInGroup(this, '${cId}')"></th>
+                                            <th width="30%">ทะเบียนรถ</th>
+                                            <th class="text-end pe-4" width="20%">ยอดเงิน</th>
+                                            <th class="text-center" width="25%">วันที่จ่าย</th>
+                                            <th class="text-center" width="20%">หลักฐาน</th>
+                                        </tr>
                                     </thead>
                                     <tbody>${rows}</tbody>
                                 </table>
@@ -259,79 +284,82 @@
         }
     }
 
-    // 🖨️ ระบบ Print ใบสรุป (เด้งหน้าใหม่พร้อมปริ้นท์)
-    function printSummaryTable(month, week) {
-        let printData = appData.filter(r => r.month === month && r.week === week);
-        if(printData.length === 0) return alert("ไม่มีข้อมูลให้พิมพ์");
-        
+    // ================= ฟังก์ชันจัดการ Checkbox =================
+    function toggleAllInGroup(masterCheckbox, groupCollapseId) {
+        const checkboxes = document.querySelectorAll(`#${groupCollapseId} .item-checkbox`);
+        checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+    }
+    
+    function checkMasterToggle(groupCollapseId) {
+        const master = document.querySelector(`#${groupCollapseId} .master-checkbox`);
+        const total = document.querySelectorAll(`#${groupCollapseId} .item-checkbox`).length;
+        const checked = document.querySelectorAll(`#${groupCollapseId} .item-checkbox:checked`).length;
+        master.checked = (total > 0 && total === checked);
+        master.indeterminate = (checked > 0 && checked < total);
+    }
+
+    function getSelectedData() {
+        const checkedIds = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
+        if(checkedIds.length === 0) {
+            alert("กรุณาติ๊กถูกหน้ารายการที่ต้องการทำรายการก่อนครับ (สามารถกดติ๊กที่หัวตารางเพื่อเลือกทั้งหมดได้)");
+            return null;
+        }
+        return appData.filter(row => checkedIds.includes(row.id));
+    }
+
+    // 🖨️ ระบบ Print ใบปะหน้าสรุป (ใช้จาก Checkbox)
+    function processPrintChecked() {
+        let printData = getSelectedData();
+        if(!printData) return;
+
         let total = 0;
         let rows = "";
-        let dateRange = printData[0].dateRange;
+        let groupTitle = printData.length > 0 ? `${printData[0].month} - ${printData[0].week} (${printData[0].dateRange})` : "รายการเบิกจ่าย";
 
         printData.forEach((r, index) => {
             total += parseFloat(r.amount);
-            rows += `
-                <tr>
-                    <td class="text-center">${index + 1}</td>
-                    <td>${r.plate}</td>
-                    <td class="text-right">${r.amount}</td>
-                    <td class="text-center">${r.paymentDate}</td>
-                </tr>`;
+            rows += `<tr><td class="text-center">${index + 1}</td><td>${r.plate}</td><td class="text-right">${r.amount}</td><td class="text-center">${displaySafeDate(r.paymentDate)}</td></tr>`;
         });
         
         let printWindow = window.open('', '_blank', 'width=800,height=600');
         printWindow.document.write(`
-            <html><head><title>สรุปรายการ ${month} ${week}</title>
+            <html><head><title>ใบปะหน้าสรุปรายการ</title>
             <style>
                 body { font-family: 'Sarabun', 'Prompt', sans-serif; padding: 30px; color: #333; }
                 table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-                th, td { border: 1px solid #000; padding: 10px; }
+                th, td { border: 1px solid #000; padding: 8px; }
                 th { background-color: #f2f2f2; font-weight: bold; text-align: center;}
-                .text-center { text-align: center; }
-                .text-right { text-align: right; }
-                .header-title { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
-                h2 { margin: 0 0 10px 0; }
-                h4 { margin: 0; color: #555; }
+                .text-center { text-align: center; } .text-right { text-align: right; }
+                .header-title { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+                h2 { margin: 0 0 5px 0; } h4 { margin: 0; color: #555; font-weight: normal; }
                 .summary-text { font-size: 16px; margin-top: 20px; text-align: right; font-weight: bold; }
             </style>
             </head><body>
                 <div class="header-title">
-                    <h2>สรุปรายการเบิกจ่ายค่าทางด่วน M-FLOW</h2>
-                    <h4>รอบบิล: ${month} - ${week} ( ${dateRange} )</h4>
+                    <h2>ใบสรุปรายการเบิกจ่ายค่าทางด่วน M-FLOW</h2>
+                    <h4>รอบบิลอ้างอิง: ${groupTitle}</h4>
                 </div>
                 <table>
                     <thead><tr><th width="10%">ลำดับ</th><th width="40%">ทะเบียนรถ</th><th width="25%">จำนวนเงิน (บาท)</th><th width="25%">วันที่ชำระ</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
-                <div class="summary-text">
-                    รวมทั้งสิ้น: &nbsp; ${printData.length} &nbsp; รายการ &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; ยอดเงินรวม: &nbsp; <span style="border-bottom: 3px double #000;">${total.toLocaleString()}</span> &nbsp; บาท
-                </div>
-                <script>
-                    window.onload = function() { 
-                        setTimeout(function() { window.print(); window.close(); }, 500);
-                    }
-                <\/script>
+                <div class="summary-text">รวมทั้งสิ้น: &nbsp; ${printData.length} &nbsp; รายการ &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; ยอดเงินรวม: &nbsp; <span style="border-bottom: 3px double #000;">${total.toLocaleString()}</span> &nbsp; บาท</div>
+                <script>window.onload = function() { setTimeout(function() { window.print(); window.close(); }, 500); }<\/script>
             </body></html>
         `);
         printWindow.document.close();
     }
 
-    // 📥 ระบบดาวน์โหลด CSV
-    function exportCSV() {
-        if(appData.length === 0) return alert("ไม่มีข้อมูลให้ดาวน์โหลด");
+    // 📥 ระบบดาวน์โหลด CSV (ใช้จาก Checkbox)
+    function processExportChecked() {
+        let exportData = getSelectedData();
+        if(!exportData) return;
         
-        let csvContent = "\uFEFF"; // ใส่ BOM เพื่อให้ Excel อ่านภาษาไทยได้
+        let csvContent = "\uFEFF"; 
         csvContent += "รอบเบิก,ช่วงวันที่,ทะเบียนรถ,ยอดเงิน,วันที่จ่าย,ลิงก์สลิป\n";
         
-        appData.forEach(row => {
-            let r = [
-                `"${row.month} ${row.week}"`,
-                `"${row.dateRange}"`,
-                `"${row.plate}"`,
-                `"${row.amount}"`,
-                `"${row.paymentDate}"`,
-                `"${row.url}"`
-            ];
+        exportData.forEach(row => {
+            let r = [`"${row.month} ${row.week}"`, `"${row.dateRange}"`, `"${row.plate}"`, `"${row.amount}"`, `"${displaySafeDate(row.paymentDate)}"`, `"${row.url}"`];
             csvContent += r.join(",") + "\n";
         });
 
@@ -340,31 +368,28 @@
         const link = document.createElement("a");
         link.setAttribute("href", url);
         link.setAttribute("download", `MFlow_Export_${new Date().getTime()}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
+    // ================= ระบบอื่นๆ =================
     function openEditBatch(month, week) {
         document.getElementById('dashboardView').classList.add('hidden'); document.getElementById('importView').classList.remove('hidden');
         document.getElementById('importTitle').innerHTML = `<i class="bi bi-pencil-square"></i> จัดการข้อมูลย้อนหลัง`;
         document.getElementById('setupSection').classList.add('hidden'); document.getElementById('processingSection').classList.add('hidden');
         document.getElementById('importSummaryView').classList.remove('hidden');
-        
-        sessionRecords = appData.filter(r => r.month === month && r.week === week).map(r => ({ id: r.id, plate: r.plate, amount: r.amount, date: r.paymentDate }));
+        sessionRecords = appData.filter(r => r.month === month && r.week === week).map(r => ({ id: r.id, plate: r.plate, amount: r.amount, date: displaySafeDate(r.paymentDate) }));
         renderSummaryTable();
     }
 
     function requestGeneratePDF(month, week) {
-        if(!confirm(`ระบบจะทำการรวบรวมยอดและสร้าง PDF ใบเบิกของ ${month} ${week} \nใช้เวลาประมาณ 1-2 นาที คุณต้องการดำเนินการต่อหรือไม่?`)) return;
+        if(!confirm(`สร้างใบรับรองเงินสดของรอบ ${month} ${week} \nใช้เวลาประมาณ 1-2 นาที ดำเนินการต่อหรือไม่?`)) return;
         document.getElementById('loadingOverlay').classList.remove('hidden'); 
-        
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generatePDF', month: month, week: week }) })
         .then(res => res.json()).then(data => {
             document.getElementById('loadingOverlay').classList.add('hidden'); 
-            if (data.status === "success") { alert("✅ สร้างเอกสาร PDF สำเร็จ! กด OK เพื่อเปิดโฟลเดอร์ Google Drive"); window.open(data.url, '_blank'); } 
-            else alert("❌ เกิดข้อผิดพลาด: " + data.message);
-        }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ สัญญาณอินเทอร์เน็ตมีปัญหา โปรดลองใหม่"); });
+            if (data.status === "success") { alert("✅ สร้างเอกสารสำเร็จ! กด OK เพื่อเปิดโฟลเดอร์ Drive"); window.open(data.url, '_blank'); } 
+            else alert("❌ ข้อผิดพลาด: " + data.message);
+        }).catch(e => { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ การเชื่อมต่อขัดข้อง"); });
     }
 
     function lookupDateRange() {
@@ -372,11 +397,11 @@
         status.innerText = "กำลังค้นหาประวัติ..."; status.className = "status-badge bg-info text-dark";
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getDateRange', month: month, week: week }) }).then(res => res.json()).then(data => {
             if (data.status === "success") {
-                status.innerText = "ดึงข้อมูลเดิมสำเร็จ"; status.className = "status-badge bg-success text-dark";
+                status.innerText = "พบข้อมูลเดิม"; status.className = "status-badge bg-success text-dark";
                 startInput.value = reverseFormatDate(data.dateRange.split(' - ')[0]); endInput.value = reverseFormatDate(data.dateRange.split(' - ')[1]);
                 startInput.readOnly = true; endInput.readOnly = true; 
             } else {
-                status.innerText = "รอบใหม่ (โปรดระบุวันที่)"; status.className = "status-badge bg-warning text-dark";
+                status.innerText = "รอบใหม่ (ระบุวันที่)"; status.className = "status-badge bg-warning text-dark";
                 startInput.value = ""; endInput.value = ""; startInput.readOnly = false; endInput.readOnly = false;
             }
         });
@@ -393,7 +418,7 @@
     
     function startImport() {
         const sD = document.getElementById('setStartDate').value, eD = document.getElementById('setEndDate').value, pD = document.getElementById('setPaymentDate').value, files = document.getElementById('slipFiles').files;
-        if(!sD || !eD || !pD) return alert("โปรดเลือกวันที่ให้ครบ"); if(files.length === 0) return alert("เลือกไฟล์สลิปก่อนครับ");
+        if(!sD || !eD || !pD) return alert("โปรดระบุวันที่ให้ครบถ้วน"); if(files.length === 0) return alert("เลือกไฟล์สลิปก่อนครับ");
         globalSetup = { month: document.getElementById('setMonth').value, week: document.getElementById('setWeek').value, dateRange: `${formatThaiDate(sD)} - ${formatThaiDate(eD)}`, paymentDate: formatThaiDate(pD) };
         slipQueue = Array.from(files); currentIndex = 0; document.getElementById('setupSection').classList.add('hidden'); document.getElementById('processingSection').classList.remove('hidden'); showCurrentSlip();
     }
@@ -416,10 +441,10 @@
     function saveData() {
         const plate = document.getElementById('inputPlate').value, amt = document.getElementById('inputAmount').value;
         if(!plate || !amt) return alert("กรอกข้อมูลให้ครบ");
-        const btn = document.getElementById('saveBtn'); btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> บันทึก...`; btn.disabled = true;
+        const btn = document.getElementById('saveBtn'); btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...`; btn.disabled = true;
         const payload = { action: 'saveSlip', year: '2026', month: globalSetup.month, week: globalSetup.week, dateRange: globalSetup.dateRange, plate: plate, amount: amt, paymentDate: globalSetup.paymentDate, fileName: slipQueue[currentIndex].name, mimeType: "image/jpeg", fileBase64: currentBase64 };
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }).then(res => res.json()).then(data => {
-            if(data.status === "success") { sessionRecords.push({ id: data.id, plate: plate, amount: amt, date: globalSetup.paymentDate }); currentIndex++; btn.disabled = false; btn.innerHTML = `<i class="bi bi-check-circle"></i> บันทึก & ถัดไป`; showCurrentSlip(); }
+            if(data.status === "success") { sessionRecords.push({ id: data.id, plate: plate, amount: amt, date: globalSetup.paymentDate }); currentIndex++; btn.disabled = false; btn.innerHTML = `บันทึก & ถัดไป`; showCurrentSlip(); }
         });
     }
 
