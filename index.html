@@ -563,7 +563,6 @@
             suggestedTransfer = prevExpenses; 
         }
 
-        // ⭐️ เปลี่ยนหน้าต่างตั้งค่า เพื่อเพิ่มช่องกรอก "เวลา"
         Swal.fire({
             title: 'ตั้งค่าเอกสาร (' + selectedYear + ')',
             html: `
@@ -599,11 +598,7 @@
                 let tDateRaw = result.value.date;
                 let tTimeRaw = result.value.time;
                 
-                // ⭐️ นำวันที่กับเวลามาต่อกันให้เป็น 05/05/26 14:30
                 let formattedDate = tDateRaw ? formatThaiDate(tDateRaw) : "";
-                if (formattedDate && tTimeRaw) {
-                    formattedDate += " " + tTimeRaw; 
-                }
 
                 document.getElementById('loadingOverlay').classList.remove('hidden'); 
                 document.getElementById('pdfProgressBar').style.width = '0%';
@@ -614,7 +609,7 @@
                     let initRes = await fetch(GAS_URL, { 
                         method: 'POST', body: JSON.stringify({ 
                             action: 'initPDF', ids: ids, year: selectedYear,
-                            forwardBalance: fwBalance, transferDate: formattedDate, transferAmount: tAmount 
+                            forwardBalance: fwBalance, transferDate: formattedDate, transferTime: tTimeRaw, transferAmount: tAmount 
                         }) 
                     });
                     let initData = await initRes.json();
