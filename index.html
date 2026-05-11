@@ -342,6 +342,10 @@
             } else { 
                 Swal.fire('ผิดพลาด', 'Username หรือ Password ไม่ถูกต้อง', 'error'); 
             }
+        })
+        .catch(error => {
+            console.error("Login Error:", error);
+            Swal.fire('การเชื่อมต่อล้มเหลว', 'โปรดตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', 'error');
         });
     }
 
@@ -370,6 +374,10 @@
                     data.plates.forEach(p => dl.innerHTML += `<option value="${p}">`);
                 }
             }
+        })
+        .catch(error => {
+            console.error("Load Data Error:", error);
+            document.getElementById('dataAccordion').innerHTML = `<div class="text-center text-danger py-5"><i class="bi bi-wifi-off fs-1"></i><br>การเชื่อมต่อขัดข้อง โปรดรีเฟรชหน้าเว็บ</div>`;
         });
     }
 
@@ -640,7 +648,7 @@
                     }
                 }).catch(e => { 
                     document.getElementById('loadingOverlay').classList.add('hidden'); 
-                    Swal.fire('ขัดข้อง', 'การเชื่อมต่ออินเทอร์เน็ตมีปัญหา', 'error'); 
+                    Swal.fire('ขัดข้อง', 'การเชื่อมต่ออินเทอร์เน็ตมีปัญหา ลองใหม่อีกครั้งครับ', 'error'); 
                 });
             }
         });
@@ -709,6 +717,11 @@
                 sInp.value = eInp.value = ""; 
                 sInp.readOnly = eInp.readOnly = false; 
             }
+        })
+        .catch(error => {
+            status.innerText = "ขัดข้อง (กรุณากรอกเอง)"; 
+            status.className = "status-badge bg-danger text-light"; 
+            sInp.readOnly = eInp.readOnly = false;
         });
     }
 
@@ -806,7 +819,10 @@
                 mimeType: "image/jpeg", 
                 fileBase64: currentBase64 
             }) 
-        }).then(res => res.json())
+        }).then(res => {
+            if (!res.ok) throw new Error('Network response was not ok');
+            return res.json();
+        })
         .then(data => {
             if(data.status === "success") { 
                 sessionRecords.push({ 
@@ -820,7 +836,22 @@
                 btn.disabled = false; 
                 btn.innerHTML = `บันทึก & ถัดไป`; 
                 showCurrentSlip(); 
+            } else {
+                Swal.fire('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์', data.message, 'error');
+                btn.innerHTML = `บันทึก & ถัดไป`; 
+                btn.disabled = false;
             }
+        })
+        .catch(error => {
+            console.error("Save Error:", error);
+            Swal.fire({
+                title: 'การเชื่อมต่อขัดข้อง!',
+                text: 'ไม่สามารถส่งข้อมูลไปที่ Google ได้ (อาจเพราะเน็ตหลุด หรือคิวเต็ม) กรุณากดปุ่ม "บันทึก & ถัดไป" เพื่อลองส่งใบนี้ใหม่อีกครั้งครับ',
+                icon: 'error'
+            });
+            // ⭐️ ปลดล็อกปุ่มให้กดบันทึกซ้ำใบเดิมได้ โดยคิวไม่พัง
+            btn.innerHTML = `บันทึก & ถัดไป`; 
+            btn.disabled = false;
         });
     }
 
@@ -893,7 +924,8 @@
                 modalInstance.hide(); 
                 renderSummaryTable(); 
             } 
-        });
+        })
+        .catch(error => Swal.fire('ล้มเหลว', 'เชื่อมต่อขัดข้อง', 'error'));
     }
     
     function deleteRecord(id) { 
@@ -917,7 +949,8 @@
                         sessionRecords = sessionRecords.filter(x => x.id !== id); 
                         renderSummaryTable(); 
                     } 
-                });
+                })
+                .catch(error => Swal.fire('ล้มเหลว', 'เชื่อมต่อขัดข้อง', 'error'));
             }
         });
     }
