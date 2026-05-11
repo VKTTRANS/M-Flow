@@ -18,9 +18,15 @@
     <datalist id="plateList"></datalist>
 
     <div id="loadingOverlay" class="hidden">
-        <div class="spinner-border text-info" style="width: 3rem; height: 3rem;" role="status"></div>
-        <h4 class="mt-4 text-info fw-bold" id="loadingTitle">กำลังประมวลผลเอกสาร...</h4>
-        <p class="text-secondary text-center">ระบบกำลังจัดการฐานข้อมูลรายปีและรวมไฟล์ PDF พร้อมใบปะหน้า<br>กรุณารอสักครู่ (ประมาณ 1-3 นาที)</p>
+        <div class="spinner-border text-info" style="width: 4rem; height: 4rem;" role="status"></div>
+        <h3 class="mt-4 text-info fw-bold" id="loadingTitle">กำลังประมวลผลเอกสาร...</h3>
+        
+        <div class="progress w-100 mt-4 shadow-sm" style="height: 30px; max-width: 600px; background-color: #334155; border-radius: 15px;">
+            <div id="pdfProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success fw-bold fs-6" style="width: 0%;">0%</div>
+        </div>
+        
+        <p id="pdfProgressText" class="mt-3 text-warning fw-bold fs-5">กำลังเตรียมข้อมูล...</p>
+        <p class="text-secondary text-center mt-2">โปรดอย่าปิดหน้าต่างนี้จนกว่าจะเสร็จสิ้น (ระบบกำลังทยอยทำเพื่อป้องกันการค้าง)</p>
     </div>
 
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
@@ -289,18 +295,14 @@
     function formatThaiDate(dateStr) { 
         if(!dateStr) return "";
         let parts = dateStr.split('-');
-        if(parts.length === 3) {
-            return `${parts[2]}/${parts[1]}/${parts[0].substring(2)}`;
-        }
+        if(parts.length === 3) { return `${parts[2]}/${parts[1]}/${parts[0].substring(2)}`; }
         return dateStr;
     }
     
     function reverseFormatDate(thaiDate) { 
         if(!thaiDate) return "";
         let parts = thaiDate.split('/');
-        if(parts.length === 3) {
-            return `20${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
+        if(parts.length === 3) { return `20${parts[2]}-${parts[1]}-${parts[0]}`; }
         return thaiDate;
     }
 
@@ -342,10 +344,6 @@
             } else { 
                 Swal.fire('ผิดพลาด', 'Username หรือ Password ไม่ถูกต้อง', 'error'); 
             }
-        })
-        .catch(error => {
-            console.error("Login Error:", error);
-            Swal.fire('การเชื่อมต่อล้มเหลว', 'โปรดตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', 'error');
         });
     }
 
@@ -356,10 +354,7 @@
 
     function loadDashboardData() {
         const selectedYear = document.getElementById('filterYear').value;
-        
-        document.querySelectorAll('.currentYearLabel').forEach(el => {
-            el.innerText = selectedYear;
-        });
+        document.querySelectorAll('.currentYearLabel').forEach(el => { el.innerText = selectedYear; });
 
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getData', year: selectedYear }) })
         .then(res => res.json())
@@ -374,10 +369,6 @@
                     data.plates.forEach(p => dl.innerHTML += `<option value="${p}">`);
                 }
             }
-        })
-        .catch(error => {
-            console.error("Load Data Error:", error);
-            document.getElementById('dataAccordion').innerHTML = `<div class="text-center text-danger py-5"><i class="bi bi-wifi-off fs-1"></i><br>การเชื่อมต่อขัดข้อง โปรดรีเฟรชหน้าเว็บ</div>`;
         });
     }
 
@@ -515,10 +506,7 @@
     function toggleAllInGroup(masterCb, cId) {
         document.querySelectorAll(`#${cId} .item-checkbox`).forEach(cb => cb.checked = masterCb.checked);
         let headerCb = masterCb.closest('.accordion-item').querySelector('.group-checkbox');
-        if(headerCb) { 
-            headerCb.checked = masterCb.checked; 
-            headerCb.indeterminate = false; 
-        }
+        if(headerCb) { headerCb.checked = masterCb.checked; headerCb.indeterminate = false; }
     }
     
     function checkMasterToggle(cId) {
@@ -528,16 +516,10 @@
         let isSome = (checked.length > 0 && checked.length < items.length);
         
         let masterCb = document.querySelector(`#${cId} .master-checkbox`);
-        if(masterCb) { 
-            masterCb.checked = isAll; 
-            masterCb.indeterminate = isSome; 
-        }
+        if(masterCb) { masterCb.checked = isAll; masterCb.indeterminate = isSome; }
         
         let headerCb = document.querySelector(`#${cId}`).closest('.accordion-item').querySelector('.group-checkbox');
-        if(headerCb) { 
-            headerCb.checked = isAll; 
-            headerCb.indeterminate = isSome; 
-        }
+        if(headerCb) { headerCb.checked = isAll; headerCb.indeterminate = isSome; }
     }
 
     function getSelectedIds() {
@@ -549,6 +531,7 @@
         return ids;
     }
 
+    // ⭐️ 🚀 ฟังก์ชันหลักที่แก้ไขใหม่ ทำงานแบบแบ่งชุด (Progressive Batching) มีหลอด 0-100% 
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); 
         if(!ids) return;
@@ -560,7 +543,7 @@
         if (uniqueWeeks.length > 1) {
             Swal.fire({
                 title: 'ข้อควรระวัง!', 
-                html: 'กรุณาเลือกทำเอกสาร <b>ทีละ 1 สัปดาห์</b> ครับ<br><small class="text-secondary mt-2 d-block">เนื่องจากระบบต้องคำนวณยอดยกมาแยกกันในแต่ละสัปดาห์<br>การนำมารวมกันจะทำให้ตัวเลขใบสรุปปะหน้าคลาดเคลื่อนครับ</small>', 
+                html: 'กรุณาเลือกทำเอกสาร <b>ทีละ 1 สัปดาห์</b> ครับ', 
                 icon: 'warning',
                 confirmButtonColor: '#3b82f6',
                 confirmButtonText: 'เข้าใจแล้ว'
@@ -589,7 +572,7 @@
             html: `
                 <div class="mb-3 text-start">
                     <label class="form-label text-secondary small">ยอดคงเหลือยกมา (ฐาน 80,000 บาท)</label>
-                    <input id="swal-balance" class="form-control bg-dark text-light border-secondary" type="number" value="${suggestedBalance}" placeholder="ตัวอย่าง: 35158">
+                    <input id="swal-balance" class="form-control bg-dark text-light border-secondary" type="number" value="${suggestedBalance}">
                 </div>
                 <div class="mb-3 text-start">
                     <label class="form-label text-secondary small">วันที่รับโอนเงิน (แสดงที่ช่อง E9)</label>
@@ -597,7 +580,7 @@
                 </div>
                 <div class="mb-2 text-start">
                     <label class="form-label text-secondary small">ยอดเงินที่รับโอน (แสดงที่ช่อง F9)</label>
-                    <input id="swal-tamount" class="form-control bg-dark text-light border-secondary" type="number" value="${suggestedTransfer}" placeholder="ตัวอย่าง: 44842">
+                    <input id="swal-tamount" class="form-control bg-dark text-light border-secondary" type="number" value="${suggestedTransfer}">
                 </div>
             `,
             icon: 'info',
@@ -610,46 +593,90 @@
                 const b = document.getElementById('swal-balance').value;
                 const d = document.getElementById('swal-tdate').value;
                 const a = document.getElementById('swal-tamount').value;
-                if (!b) { 
-                    Swal.showValidationMessage('กรุณาระบุยอดคงเหลือยกมา'); 
-                    return false; 
-                }
+                if (!b) { Swal.showValidationMessage('กรุณาระบุยอดคงเหลือยกมา'); return false; }
                 return { balance: b, date: d, tamount: a };
             }
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
                 let fwBalance = parseFloat(result.value.balance) || 0;
                 let tAmount = parseFloat(result.value.tamount) || 0;
                 let tDateRaw = result.value.date;
                 let formattedDate = tDateRaw ? formatThaiDate(tDateRaw) : "";
 
+                // รีเซ็ตหน้าต่าง Loading เป็นโหมด Progress
                 document.getElementById('loadingOverlay').classList.remove('hidden'); 
-                
-                fetch(GAS_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ 
-                        action: 'generateAllPDFs', 
-                        ids: ids, 
-                        year: selectedYear,
-                        forwardBalance: fwBalance, 
-                        transferDate: formattedDate,
-                        transferAmount: tAmount 
-                    }) 
-                }).then(res => res.json())
-                .then(data => {
-                    document.getElementById('loadingOverlay').classList.add('hidden'); 
-                    if (data.status === "success") { 
-                        Swal.fire({ title: 'สร้างสำเร็จ!', text: 'ไฟล์ถูกจัดเก็บแยกตามปีเรียบร้อย', icon: 'success', confirmButtonText: 'เปิดไฟล์' }).then(() => { 
-                            window.open(data.url, '_blank'); 
-                            loadDashboardData(); 
+                document.getElementById('pdfProgressBar').style.width = '0%';
+                document.getElementById('pdfProgressBar').innerText = '0%';
+                document.getElementById('pdfProgressText').innerText = 'กำลังเตรียมใบปะหน้าสรุป...';
+
+                try {
+                    // ขั้นตอน 1: สั่งเริ่มสร้างไฟล์ (Init)
+                    let initRes = await fetch(GAS_URL, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ 
+                            action: 'initPDF', ids: ids, year: selectedYear,
+                            forwardBalance: fwBalance, transferDate: formattedDate, transferAmount: tAmount 
+                        }) 
+                    });
+                    let initData = await initRes.json();
+                    if (initData.status !== 'success') throw new Error(initData.message);
+
+                    let tempSsId = initData.tempSsId;
+                    let platesData = initData.platesData;
+                    let sDate = initData.sDate;
+                    let eDate = initData.eDate;
+                    
+                    // ขั้นตอน 2: ทยอยส่งข้อมูลทำใบเบิก (แบ่งส่งทีละ 5 คัน เพื่อกันหลุด 100%)
+                    let chunkSize = 5;
+                    let totalPlates = platesData.length;
+                    let processedPlates = 0;
+
+                    for (let i = 0; i < totalPlates; i += chunkSize) {
+                        let chunk = platesData.slice(i, i + chunkSize);
+                        
+                        let chunkRes = await fetch(GAS_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                action: 'processPDFChunk',
+                                tempSsId: tempSsId, chunk: chunk, sDate: sDate, eDate: eDate
+                            })
                         });
-                    } else { 
-                        Swal.fire('ผิดพลาด', data.message, 'error'); 
+                        let chunkData = await chunkRes.json();
+                        if (chunkData.status !== 'success') throw new Error(chunkData.message);
+
+                        processedPlates += chunk.length;
+                        let percent = Math.round((processedPlates / totalPlates) * 100);
+                        document.getElementById('pdfProgressBar').style.width = percent + '%';
+                        document.getElementById('pdfProgressBar').innerText = percent + '%';
+                        document.getElementById('pdfProgressText').innerText = `กำลังดึงสลิปคันที่ ${processedPlates} / ${totalPlates} คัน...`;
                     }
-                }).catch(e => { 
+
+                    // ขั้นตอน 3: สั่งรวมไฟล์เป็น PDF
+                    document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกไฟล์เป็น PDF...';
+                    
+                    let finalRes = await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'finalizePDF',
+                            tempSsId: tempSsId, year: selectedYear,
+                            derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek
+                        })
+                    });
+                    let finalData = await finalRes.json();
+                    if (finalData.status !== 'success') throw new Error(finalData.message);
+
+                    // เสร็จสมบูรณ์
                     document.getElementById('loadingOverlay').classList.add('hidden'); 
-                    Swal.fire('ขัดข้อง', 'การเชื่อมต่ออินเทอร์เน็ตมีปัญหา ลองใหม่อีกครั้งครับ', 'error'); 
-                });
+                    Swal.fire({ title: 'สร้างสำเร็จ!', text: 'ไฟล์ถูกจัดเก็บแยกตามปีเรียบร้อย', icon: 'success', confirmButtonText: 'เปิดไฟล์' }).then(() => { 
+                        window.open(finalData.url, '_blank'); 
+                        loadDashboardData(); 
+                    });
+
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById('loadingOverlay').classList.add('hidden'); 
+                    Swal.fire('ขัดข้อง', error.message || 'การเชื่อมต่ออินเทอร์เน็ตมีปัญหา โปรดลองใหม่อีกครั้ง', 'error');
+                }
             }
         });
     }
@@ -682,11 +709,7 @@
         document.getElementById('importSummaryView').classList.remove('hidden');
         
         sessionRecords = appData.filter(r => r.month === month && r.week === week).map(r => ({ 
-            id: r.id, 
-            plate: r.plate, 
-            amount: r.amount, 
-            date: displaySafeDate(r.paymentDate),
-            year: selectedYear
+            id: r.id, plate: r.plate, amount: r.amount, date: displaySafeDate(r.paymentDate), year: selectedYear
         })); 
         renderSummaryTable();
     }
@@ -717,11 +740,6 @@
                 sInp.value = eInp.value = ""; 
                 sInp.readOnly = eInp.readOnly = false; 
             }
-        })
-        .catch(error => {
-            status.innerText = "ขัดข้อง (กรุณากรอกเอง)"; 
-            status.className = "status-badge bg-danger text-light"; 
-            sInp.readOnly = eInp.readOnly = false;
         });
     }
 
@@ -807,17 +825,9 @@
         fetch(GAS_URL, { 
             method: 'POST', 
             body: JSON.stringify({ 
-                action: 'saveSlip', 
-                year: globalSetup.year, 
-                month: globalSetup.month, 
-                week: globalSetup.week, 
-                dateRange: globalSetup.dateRange, 
-                plate: plate, 
-                amount: amt, 
-                paymentDate: globalSetup.paymentDate, 
-                fileName: slipQueue[currentIndex].name, 
-                mimeType: "image/jpeg", 
-                fileBase64: currentBase64 
+                action: 'saveSlip', year: globalSetup.year, month: globalSetup.month, week: globalSetup.week, 
+                dateRange: globalSetup.dateRange, plate: plate, amount: amt, paymentDate: globalSetup.paymentDate, 
+                fileName: slipQueue[currentIndex].name, mimeType: "image/jpeg", fileBase64: currentBase64 
             }) 
         }).then(res => {
             if (!res.ok) throw new Error('Network response was not ok');
@@ -826,11 +836,7 @@
         .then(data => {
             if(data.status === "success") { 
                 sessionRecords.push({ 
-                    id: data.id, 
-                    plate: plate, 
-                    amount: amt, 
-                    date: globalSetup.paymentDate,
-                    year: globalSetup.year
+                    id: data.id, plate: plate, amount: amt, date: globalSetup.paymentDate, year: globalSetup.year
                 }); 
                 currentIndex++; 
                 btn.disabled = false; 
@@ -843,13 +849,11 @@
             }
         })
         .catch(error => {
-            console.error("Save Error:", error);
             Swal.fire({
                 title: 'การเชื่อมต่อขัดข้อง!',
-                text: 'ไม่สามารถส่งข้อมูลไปที่ Google ได้ (อาจเพราะเน็ตหลุด หรือคิวเต็ม) กรุณากดปุ่ม "บันทึก & ถัดไป" เพื่อลองส่งใบนี้ใหม่อีกครั้งครับ',
+                text: 'เน็ตหลุดหรือคิวเต็ม กรุณากดปุ่ม "บันทึก & ถัดไป" เพื่อลองส่งใบนี้ใหม่อีกครั้งครับ',
                 icon: 'error'
             });
-            // ⭐️ ปลดล็อกปุ่มให้กดบันทึกซ้ำใบเดิมได้ โดยคิวไม่พัง
             btn.innerHTML = `บันทึก & ถัดไป`; 
             btn.disabled = false;
         });
@@ -906,14 +910,7 @@
         
         fetch(GAS_URL, { 
             method: 'POST', 
-            body: JSON.stringify({ 
-                action: 'updateSlip', 
-                id: id, 
-                plate: nPlate, 
-                amount: nAmt, 
-                paymentDate: nDate,
-                year: year
-            }) 
+            body: JSON.stringify({ action: 'updateSlip', id: id, plate: nPlate, amount: nAmt, paymentDate: nDate, year: year }) 
         }).then(res => res.json())
         .then(data => { 
             if(data.status === "success") { 
@@ -924,33 +921,25 @@
                 modalInstance.hide(); 
                 renderSummaryTable(); 
             } 
-        })
-        .catch(error => Swal.fire('ล้มเหลว', 'เชื่อมต่อขัดข้อง', 'error'));
+        });
     }
     
     function deleteRecord(id) { 
         Swal.fire({ 
-            title: 'ลบรายการ?', 
-            text: "ลบแล้วจะไม่สามารถกู้คืนได้", 
-            icon: 'warning', 
-            showCancelButton: true, 
-            confirmButtonColor: '#d33', 
-            cancelButtonColor: '#3085d6', 
-            confirmButtonText: 'ลบเลย!' 
+            title: 'ลบรายการ?', text: "ลบแล้วจะไม่สามารถกู้คืนได้", icon: 'warning', 
+            showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'ลบเลย!' 
         }).then((result) => {
             if (result.isConfirmed) {
                 const year = sessionRecords.find(x => x.id === id).year;
                 fetch(GAS_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: 'deleteSlip', id: id, year: year }) 
+                    method: 'POST', body: JSON.stringify({ action: 'deleteSlip', id: id, year: year }) 
                 }).then(res => res.json())
                 .then(data => { 
                     if(data.status === "success") { 
                         sessionRecords = sessionRecords.filter(x => x.id !== id); 
                         renderSummaryTable(); 
                     } 
-                })
-                .catch(error => Swal.fire('ล้มเหลว', 'เชื่อมต่อขัดข้อง', 'error'));
+                });
             }
         });
     }
