@@ -306,6 +306,7 @@
         return thaiDate;
     }
 
+    // ⭐️ เพิ่มการดักจับวันที่แปลกๆ (เช่น T17:00:00Z) เพื่อความปลอดภัย
     function displaySafeDate(d) { 
         if (!d) return "-"; 
         if (d.includes("T")) return new Date(d).toLocaleDateString('en-GB'); 
@@ -531,7 +532,7 @@
         return ids;
     }
 
-    // ⭐️ 🚀 ฟังก์ชันหลักที่แก้ไขใหม่ ทำงานแบบแบ่งชุด (Progressive Batching) มีหลอด 0-100% 
+    // ⭐️ ระบบสร้างเอกสารแบบแบ่งชุด + เพิ่มเวลาในวันที่รับโอน
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); 
         if(!ids) return;
@@ -542,11 +543,8 @@
         
         if (uniqueWeeks.length > 1) {
             Swal.fire({
-                title: 'ข้อควรระวัง!', 
-                html: 'กรุณาเลือกทำเอกสาร <b>ทีละ 1 สัปดาห์</b> ครับ', 
-                icon: 'warning',
-                confirmButtonColor: '#3b82f6',
-                confirmButtonText: 'เข้าใจแล้ว'
+                title: 'ข้อควรระวัง!', html: 'กรุณาเลือกทำเอกสาร <b>ทีละ 1 สัปดาห์</b> ครับ', 
+                icon: 'warning', confirmButtonColor: '#3b82f6', confirmButtonText: 'เข้าใจแล้ว'
             });
             return;
         }
@@ -567,6 +565,7 @@
             suggestedTransfer = prevExpenses; 
         }
 
+        // ⭐️ เปลี่ยนหน้าต่างตั้งค่า เพื่อเพิ่มช่องกรอก "เวลา"
         Swal.fire({
             title: 'ตั้งค่าเอกสาร (' + selectedYear + ')',
             html: `
@@ -575,45 +574,47 @@
                     <input id="swal-balance" class="form-control bg-dark text-light border-secondary" type="number" value="${suggestedBalance}">
                 </div>
                 <div class="mb-3 text-start">
-                    <label class="form-label text-secondary small">วันที่รับโอนเงิน (แสดงที่ช่อง E9)</label>
-                    <input id="swal-tdate" class="form-control bg-dark text-light border-secondary" type="date">
+                    <label class="form-label text-secondary small">วันที่และเวลารับโอนเงิน (แสดงที่ช่อง E9)</label>
+                    <div class="input-group">
+                        <input id="swal-tdate" class="form-control bg-dark text-light border-secondary" type="date">
+                        <input id="swal-ttime" class="form-control bg-dark text-light border-secondary" type="time">
+                    </div>
                 </div>
                 <div class="mb-2 text-start">
                     <label class="form-label text-secondary small">ยอดเงินที่รับโอน (แสดงที่ช่อง F9)</label>
                     <input id="swal-tamount" class="form-control bg-dark text-light border-secondary" type="number" value="${suggestedTransfer}">
                 </div>
             `,
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonColor: '#3b82f6',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'ยืนยันสร้างเอกสาร',
-            cancelButtonText: 'ยกเลิก',
+            icon: 'info', showCancelButton: true, confirmButtonColor: '#3b82f6', cancelButtonColor: '#64748b', confirmButtonText: 'ยืนยันสร้างเอกสาร', cancelButtonText: 'ยกเลิก',
             preConfirm: () => {
                 const b = document.getElementById('swal-balance').value;
                 const d = document.getElementById('swal-tdate').value;
+                const t = document.getElementById('swal-ttime').value;
                 const a = document.getElementById('swal-tamount').value;
                 if (!b) { Swal.showValidationMessage('กรุณาระบุยอดคงเหลือยกมา'); return false; }
-                return { balance: b, date: d, tamount: a };
+                return { balance: b, date: d, time: t, tamount: a };
             }
         }).then(async (result) => {
             if (result.isConfirmed) {
                 let fwBalance = parseFloat(result.value.balance) || 0;
                 let tAmount = parseFloat(result.value.tamount) || 0;
                 let tDateRaw = result.value.date;
+                let tTimeRaw = result.value.time;
+                
+                // ⭐️ นำวันที่กับเวลามาต่อกันให้เป็น 05/05/26 14:30
                 let formattedDate = tDateRaw ? formatThaiDate(tDateRaw) : "";
+                if (formattedDate && tTimeRaw) {
+                    formattedDate += " " + tTimeRaw; 
+                }
 
-                // รีเซ็ตหน้าต่าง Loading เป็นโหมด Progress
                 document.getElementById('loadingOverlay').classList.remove('hidden'); 
                 document.getElementById('pdfProgressBar').style.width = '0%';
                 document.getElementById('pdfProgressBar').innerText = '0%';
                 document.getElementById('pdfProgressText').innerText = 'กำลังเตรียมใบปะหน้าสรุป...';
 
                 try {
-                    // ขั้นตอน 1: สั่งเริ่มสร้างไฟล์ (Init)
                     let initRes = await fetch(GAS_URL, { 
-                        method: 'POST', 
-                        body: JSON.stringify({ 
+                        method: 'POST', body: JSON.stringify({ 
                             action: 'initPDF', ids: ids, year: selectedYear,
                             forwardBalance: fwBalance, transferDate: formattedDate, transferAmount: tAmount 
                         }) 
@@ -626,8 +627,8 @@
                     let sDate = initData.sDate;
                     let eDate = initData.eDate;
                     
-                    // ขั้นตอน 2: ทยอยส่งข้อมูลทำใบเบิก (แบ่งส่งทีละ 5 คัน เพื่อกันหลุด 100%)
-                    let chunkSize = 5;
+                    // ⭐️ ปรับให้ทำทีละ 15 คันต่อ 1 รอบการโหลด เพื่อให้เสร็จเร็วขึ้น
+                    let chunkSize = 15; 
                     let totalPlates = platesData.length;
                     let processedPlates = 0;
 
@@ -635,10 +636,8 @@
                         let chunk = platesData.slice(i, i + chunkSize);
                         
                         let chunkRes = await fetch(GAS_URL, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                action: 'processPDFChunk',
-                                tempSsId: tempSsId, chunk: chunk, sDate: sDate, eDate: eDate
+                            method: 'POST', body: JSON.stringify({
+                                action: 'processPDFChunk', tempSsId: tempSsId, chunk: chunk, sDate: sDate, eDate: eDate
                             })
                         });
                         let chunkData = await chunkRes.json();
@@ -651,23 +650,25 @@
                         document.getElementById('pdfProgressText').innerText = `กำลังดึงสลิปคันที่ ${processedPlates} / ${totalPlates} คัน...`;
                     }
 
-                    // ขั้นตอน 3: สั่งรวมไฟล์เป็น PDF
-                    document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกไฟล์เป็น PDF...';
+                    document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกเอกสาร...';
                     
                     let finalRes = await fetch(GAS_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            action: 'finalizePDF',
-                            tempSsId: tempSsId, year: selectedYear,
+                        method: 'POST', body: JSON.stringify({
+                            action: 'finalizePDF', tempSsId: tempSsId, year: selectedYear,
                             derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek
                         })
                     });
                     let finalData = await finalRes.json();
                     if (finalData.status !== 'success') throw new Error(finalData.message);
 
-                    // เสร็จสมบูรณ์
                     document.getElementById('loadingOverlay').classList.add('hidden'); 
-                    Swal.fire({ title: 'สร้างสำเร็จ!', text: 'ไฟล์ถูกจัดเก็บแยกตามปีเรียบร้อย', icon: 'success', confirmButtonText: 'เปิดไฟล์' }).then(() => { 
+                    
+                    Swal.fire({ 
+                        title: finalData.icon === "success" ? 'สร้างสำเร็จ!' : 'เอกสารมีขนาดใหญ่มาก!', 
+                        text: finalData.message, 
+                        icon: finalData.icon, 
+                        confirmButtonText: 'เปิดไฟล์' 
+                    }).then(() => { 
                         window.open(finalData.url, '_blank'); 
                         loadDashboardData(); 
                     });
@@ -849,13 +850,8 @@
             }
         })
         .catch(error => {
-            Swal.fire({
-                title: 'การเชื่อมต่อขัดข้อง!',
-                text: 'เน็ตหลุดหรือคิวเต็ม กรุณากดปุ่ม "บันทึก & ถัดไป" เพื่อลองส่งใบนี้ใหม่อีกครั้งครับ',
-                icon: 'error'
-            });
-            btn.innerHTML = `บันทึก & ถัดไป`; 
-            btn.disabled = false;
+            Swal.fire({ title: 'การเชื่อมต่อขัดข้อง!', text: 'เน็ตหลุดหรือคิวเต็ม กรุณากดปุ่ม "บันทึก & ถัดไป" เพื่อลองส่งใบนี้ใหม่อีกครั้งครับ', icon: 'error' });
+            btn.innerHTML = `บันทึก & ถัดไป`; btn.disabled = false;
         });
     }
 
