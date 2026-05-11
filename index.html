@@ -306,7 +306,6 @@
         return thaiDate;
     }
 
-    // ⭐️ เพิ่มการดักจับวันที่แปลกๆ (เช่น T17:00:00Z) เพื่อความปลอดภัย
     function displaySafeDate(d) { 
         if (!d) return "-"; 
         if (d.includes("T")) return new Date(d).toLocaleDateString('en-GB'); 
@@ -532,7 +531,6 @@
         return ids;
     }
 
-    // ⭐️ ระบบสร้างเอกสารแบบแบ่งชุด + เพิ่มเวลาในวันที่รับโอน
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); 
         if(!ids) return;
@@ -627,7 +625,6 @@
                     let sDate = initData.sDate;
                     let eDate = initData.eDate;
                     
-                    // ⭐️ ปรับให้ทำทีละ 15 คันต่อ 1 รอบการโหลด เพื่อให้เสร็จเร็วขึ้น
                     let chunkSize = 15; 
                     let totalPlates = platesData.length;
                     let processedPlates = 0;
