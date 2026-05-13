@@ -7,7 +7,111 @@ body {
 }
 .hidden { display: none !important; }
 
-/* การ์ดสไตล์เรียบหรู */
+/* ================= Login Page (Modern Glassmorphism) ================= */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at top left, #1e293b, #0f172a 70%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Floating Orbs */
+.orb {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    filter: blur(50px);
+    z-index: 0;
+    animation: float 8s infinite ease-in-out alternate;
+}
+.orb-1 {
+    top: -50px; left: -50px;
+    background: rgba(56, 189, 248, 0.2);
+}
+.orb-2 {
+    bottom: -50px; right: -50px;
+    background: rgba(99, 102, 241, 0.2);
+    animation-delay: -4s;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px) scale(1); }
+    100% { transform: translateY(-30px) scale(1.1); }
+}
+
+/* Login Card */
+.login-card {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    max-width: 420px;
+    width: 100%;
+    z-index: 1; 
+}
+
+/* Bounce Animation */
+.animate-bounce i {
+    display: inline-block;
+    animation: bounce 2s infinite ease-in-out;
+}
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Fade In Up */
+.fade-in-up {
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Inputs & Floating Labels */
+.custom-input {
+    background-color: rgba(15, 23, 42, 0.5) !important;
+    border: 1px solid #334155;
+    color: #f8fafc !important;
+    border-radius: 12px;
+    height: 58px;
+    transition: all 0.3s ease;
+}
+.custom-input:focus {
+    background-color: #0f172a !important;
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
+}
+.form-floating > label { color: #94a3b8; display: flex; align-items: center; }
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: #38bdf8;
+    transform: scale(0.85) translateY(-0.8rem) translateX(0.15rem);
+}
+
+/* Login Button */
+.login-btn {
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+}
+.login-btn:active {
+    transform: translateY(1px);
+}
+
+/* ================= Dashboard Elements ================= */
 .card { 
     background-color: #1e293b; 
     border: 1px solid #334155; 
@@ -21,7 +125,7 @@ body {
     font-weight: 700; 
 }
 
-/* ฟอร์มและปุ่ม */
+/* ฟอร์มและปุ่ม (Dashboard) */
 .form-control, .form-select { 
     background-color: #0f172a; 
     border: 1px solid #334155; 
@@ -36,7 +140,7 @@ body {
 }
 input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 .btn { border-radius: 6px; font-weight: 500; transition: all 0.2s ease; }
-.btn-primary { background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; }
+.btn-primary:not(.login-btn) { background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; }
 
 /* ⭐️ รูปสลิป (ปรับให้ใหญ่เต็มตา) */
 .slip-preview { 
