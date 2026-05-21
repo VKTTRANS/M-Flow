@@ -493,7 +493,7 @@
                                             <th class="text-center" width="20%">หลักฐาน</th>
                                         </tr>
                                     </thead>
-                                    <tbody>${rows}</tbody>
+                                    <tbody id="summaryTableBody">${rows}</tbody>
                                 </table>
                             </div>
                         </div>
@@ -646,10 +646,12 @@
 
                     document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกเอกสาร...';
                     
+                    // --- ส่ง grandTotal และข้อมูลวันที่กลับไปให้ Backend เพื่อกรอกชีตเงินสดย่อย ---
                     let finalRes = await fetch(GAS_URL, {
                         method: 'POST', body: JSON.stringify({
                             action: 'finalizePDF', tempSsId: tempSsId, year: selectedYear,
-                            derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek
+                            derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek,
+                            sDate: initData.sDate, eDate: initData.eDate, grandTotal: initData.grandTotal 
                         })
                     });
                     let finalData = await finalRes.json();
@@ -658,10 +660,10 @@
                     document.getElementById('loadingOverlay').classList.add('hidden'); 
                     
                     Swal.fire({ 
-                        title: finalData.icon === "success" ? 'สร้างสำเร็จ!' : 'เอกสารมีขนาดใหญ่มาก!', 
+                        title: finalData.icon === "success" ? 'สร้างสำเร็จ!' : 'เอกสารและชีตสำเร็จ!', 
                         text: finalData.message, 
-                        icon: finalData.icon, 
-                        confirmButtonText: 'เปิดไฟล์' 
+                        icon: finalData.icon || "success", 
+                        confirmButtonText: 'เปิดไฟล์ PDF' 
                     }).then(() => { 
                         window.open(finalData.url, '_blank'); 
                         loadDashboardData(); 
