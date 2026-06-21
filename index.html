@@ -493,7 +493,7 @@
                                             <th class="text-center" width="20%">หลักฐาน</th>
                                         </tr>
                                     </thead>
-                                    <tbody>${rows}</tbody>
+                                    <tbody id="summaryTableBody">${rows}</tbody>
                                 </table>
                             </div>
                         </div>
@@ -898,8 +898,12 @@
         const nPlate = document.getElementById('editPlate').value;
         const nAmt = document.getElementById('editAmount').value;
         const nDate = document.getElementById('editDate').value;
-        const year = sessionRecords.find(x => x.id === id).year;
+        const record = sessionRecords.find(x => x.id === id);
+        if (!record) return;
+        const year = record.year;
         
+        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+
         fetch(GAS_URL, { 
             method: 'POST', 
             body: JSON.stringify({ action: 'updateSlip', id: id, plate: nPlate, amount: nAmt, paymentDate: nDate, year: year }) 
@@ -912,7 +916,12 @@
                 sessionRecords[idx].date = nDate; 
                 modalInstance.hide(); 
                 renderSummaryTable(); 
-            } 
+                Swal.fire('สำเร็จ', 'อัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
+            } else {
+                Swal.fire('ขัดข้อง', data.message || 'ไม่สามารถแก้ไขได้', 'error');
+            }
+        }).catch(err => {
+            Swal.fire('ข้อผิดพลาดทางเครือข่าย', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error');
         });
     }
     
@@ -922,7 +931,12 @@
             showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'ลบเลย!' 
         }).then((result) => {
             if (result.isConfirmed) {
-                const year = sessionRecords.find(x => x.id === id).year;
+                const record = sessionRecords.find(x => x.id === id);
+                if (!record) return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลนี้บนหน้าจอ', 'error');
+                const year = record.year;
+
+                Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+
                 fetch(GAS_URL, { 
                     method: 'POST', body: JSON.stringify({ action: 'deleteSlip', id: id, year: year }) 
                 }).then(res => res.json())
@@ -930,7 +944,12 @@
                     if(data.status === "success") { 
                         sessionRecords = sessionRecords.filter(x => x.id !== id); 
                         renderSummaryTable(); 
-                    } 
+                        Swal.fire('สำเร็จ', 'ลบรายการเรียบร้อยแล้ว', 'success');
+                    } else {
+                        Swal.fire('ขัดข้อง', data.message || 'ไม่สามารถลบได้', 'error');
+                    }
+                }).catch(err => {
+                    Swal.fire('ข้อผิดพลาดทางเครือข่าย', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error');
                 });
             }
         });
