@@ -150,6 +150,7 @@
                         <option value="Week 3">สัปดาห์ที่ 3</option>
                         <option value="Week 4">สัปดาห์ที่ 4</option>
                         <option value="Week 5">สัปดาห์ที่ 5</option>
+                        <option value="Week 6">สัปดาห์ที่ 6</option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -210,6 +211,7 @@
                         <option value="Week 3">สัปดาห์ที่ 3</option>
                         <option value="Week 4">สัปดาห์ที่ 4</option>
                         <option value="Week 5">สัปดาห์ที่ 5</option>
+                        <option value="Week 6">สัปดาห์ที่ 6</option>
                     </select>
                 </div>
                 <div class="col-12 border-bottom border-secondary pb-1 d-flex justify-content-between align-items-center mt-3">
@@ -284,7 +286,7 @@
                             <th class="text-end pe-3">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="summaryTableBody"></tbody>
+                    <tbody id="importSummaryTableBody"></tbody>
                 </table>
             </div>
             <button class="btn btn-primary w-100 py-3" onclick="backToDashboard()"><i class="bi bi-check-circle"></i> ยืนยันยอด กลับไปหน้าหลัก</button>
@@ -493,7 +495,7 @@
                                             <th class="text-center" width="20%">หลักฐาน</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="summaryTableBody">${rows}</tbody>
+                                    <tbody>${rows}</tbody>
                                 </table>
                             </div>
                         </div>
@@ -859,7 +861,7 @@
     
     function renderSummaryTable() {
         let totalAmt = 0; 
-        const tbody = document.getElementById('summaryTableBody'); 
+        const tbody = document.getElementById('importSummaryTableBody'); 
         tbody.innerHTML = "";
         
         sessionRecords.forEach(r => { 
