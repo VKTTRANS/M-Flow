@@ -298,6 +298,17 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwyCZR0pWSUrHspbIHOnUXVOux3vThqbKu5yOX8uWFPewCjvkuqyFqohFqc_TLTjYwd/exec"; 
     let appData = [], globalDocLinks = {}, currentUserRole = "", slipQueue = [], currentIndex = 0, currentBase64 = "", sessionRecords = [], globalSetup = {};
 
+    async function fetchGAS(payload) {
+        let res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+        if (!res.ok) throw new Error('HTTP Error: ' + res.status);
+        return await res.json();
+    }
+
     function formatThaiDate(dateStr) { 
         if(!dateStr) return "";
         let parts = dateStr.split('-');
@@ -348,15 +359,14 @@
         const p = document.getElementById('password').value;
         Swal.fire({ title: 'กำลังตรวจสอบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
         
-        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'login', username: u, password: p }) })
-        .then(res => res.json())
+        fetchGAS({ action: 'login', username: u, password: p })
         .then(data => {
             if (data.status === 'success') {
                 Swal.close();
                 localStorage.setItem('mflow_session', JSON.stringify({ role: data.role, expire: Date.now() + (7 * 24 * 60 * 60 * 1000) }));
                 checkSession();
             } else { Swal.fire('ผิดพลาด', 'Username หรือ Password ไม่ถูกต้อง', 'error'); }
-        });
+        }).catch(err => Swal.fire('Error', err.toString(), 'error'));
     }
 
     function logout() { localStorage.removeItem('mflow_session'); location.reload(); }
@@ -365,8 +375,7 @@
         const selectedYear = document.getElementById('filterYear').value;
         document.querySelectorAll('.currentYearLabel').forEach(el => { el.innerText = selectedYear; });
 
-        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getData', year: selectedYear }) })
-        .then(res => res.json())
+        fetchGAS({ action: 'getData', year: selectedYear })
         .then(data => {
             if (data.status === "success") { 
                 appData = data.data; 
@@ -378,7 +387,7 @@
                     data.plates.forEach(p => dl.innerHTML += `<option value="${p}">`);
                 }
             }
-        });
+        }).catch(err => console.error(err));
     }
 
     function applyFilters() {
@@ -610,13 +619,11 @@
                 document.getElementById('pdfProgressText').innerText = 'กำลังเตรียมใบปะหน้าสรุป...';
 
                 try {
-                    let initRes = await fetch(GAS_URL, { 
-                        method: 'POST', body: JSON.stringify({ 
-                            action: 'initPDF', ids: ids, year: selectedYear,
-                            forwardBalance: fwBalance, transferDate: formattedDate, transferTime: tTimeRaw, transferAmount: tAmount 
-                        }) 
+                    let initData = await fetchGAS({ 
+                        action: 'initPDF', ids: ids, year: selectedYear,
+                        forwardBalance: fwBalance, transferDate: formattedDate, transferTime: tTimeRaw, transferAmount: tAmount 
                     });
-                    let initData = await initRes.json();
+                    
                     if (initData.status !== 'success') throw new Error(initData.message);
 
                     let tempSsId = initData.tempSsId;
@@ -630,13 +637,10 @@
 
                     for (let i = 0; i < totalPlates; i += chunkSize) {
                         let chunk = platesData.slice(i, i + chunkSize);
-                        
-                        let chunkRes = await fetch(GAS_URL, {
-                            method: 'POST', body: JSON.stringify({
-                                action: 'processPDFChunk', tempSsId: tempSsId, chunk: chunk, sDate: sDate, eDate: eDate
-                            })
+                        let chunkData = await fetchGAS({
+                            action: 'processPDFChunk', tempSsId: tempSsId, chunk: chunk, sDate: sDate, eDate: eDate
                         });
-                        let chunkData = await chunkRes.json();
+                        
                         if (chunkData.status !== 'success') throw new Error(chunkData.message);
 
                         processedPlates += chunk.length;
@@ -648,15 +652,12 @@
 
                     document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกเอกสาร...';
                     
-                    // --- ส่ง grandTotal และข้อมูลวันที่กลับไปให้ Backend เพื่อกรอกชีตเงินสดย่อย ---
-                    let finalRes = await fetch(GAS_URL, {
-                        method: 'POST', body: JSON.stringify({
-                            action: 'finalizePDF', tempSsId: tempSsId, year: selectedYear,
-                            derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek,
-                            sDate: initData.sDate, eDate: initData.eDate, grandTotal: initData.grandTotal 
-                        })
+                    let finalData = await fetchGAS({
+                        action: 'finalizePDF', tempSsId: tempSsId, year: selectedYear,
+                        derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek,
+                        sDate: initData.sDate, eDate: initData.eDate, grandTotal: initData.grandTotal 
                     });
-                    let finalData = await finalRes.json();
+                    
                     if (finalData.status !== 'success') throw new Error(finalData.message);
 
                     document.getElementById('loadingOverlay').classList.add('hidden'); 
@@ -724,8 +725,7 @@
         status.innerText = "กำลังค้นหาประวัติ..."; 
         status.className = "status-badge bg-info text-dark";
         
-        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getDateRange', month: m, week: w, year: y }) })
-        .then(res => res.json())
+        fetchGAS({ action: 'getDateRange', month: m, week: w, year: y })
         .then(data => {
             if (data.status === "success") { 
                 status.innerText = "พบข้อมูลเดิม"; 
@@ -739,7 +739,7 @@
                 sInp.value = eInp.value = ""; 
                 sInp.readOnly = eInp.readOnly = false; 
             }
-        });
+        }).catch(err => console.error(err));
     }
 
     function openImportView() {
@@ -821,18 +821,11 @@
         btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> บันทึก...`; 
         btn.disabled = true;
         
-        fetch(GAS_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ 
-                action: 'saveSlip', year: globalSetup.year, month: globalSetup.month, week: globalSetup.week, 
-                dateRange: globalSetup.dateRange, plate: plate, amount: amt, paymentDate: globalSetup.paymentDate, 
-                fileName: slipQueue[currentIndex].name, mimeType: "image/jpeg", fileBase64: currentBase64 
-            }) 
-        }).then(res => {
-            if (!res.ok) throw new Error('Network response was not ok');
-            return res.json();
-        })
-        .then(data => {
+        fetchGAS({ 
+            action: 'saveSlip', year: globalSetup.year, month: globalSetup.month, week: globalSetup.week, 
+            dateRange: globalSetup.dateRange, plate: plate, amount: amt, paymentDate: globalSetup.paymentDate, 
+            fileName: slipQueue[currentIndex].name, mimeType: "image/jpeg", fileBase64: currentBase64 
+        }).then(data => {
             if(data.status === "success") { 
                 sessionRecords.push({ 
                     id: data.id, plate: plate, amount: amt, date: globalSetup.paymentDate, year: globalSetup.year
@@ -846,8 +839,7 @@
                 btn.innerHTML = `บันทึก & ถัดไป`; 
                 btn.disabled = false;
             }
-        })
-        .catch(error => {
+        }).catch(error => {
             Swal.fire({ title: 'การเชื่อมต่อขัดข้อง!', text: 'เน็ตหลุดหรือคิวเต็ม กรุณากดปุ่ม "บันทึก & ถัดไป" เพื่อลองส่งใบนี้ใหม่อีกครั้งครับ', icon: 'error' });
             btn.innerHTML = `บันทึก & ถัดไป`; btn.disabled = false;
         });
@@ -906,10 +898,7 @@
         
         Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
 
-        fetch(GAS_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ action: 'updateSlip', id: id, plate: nPlate, amount: nAmt, paymentDate: nDate, year: year }) 
-        }).then(res => res.json())
+        fetchGAS({ action: 'updateSlip', id: id, plate: nPlate, amount: nAmt, paymentDate: nDate, year: year })
         .then(data => { 
             if(data.status === "success") { 
                 const idx = sessionRecords.findIndex(x => x.id === id); 
@@ -939,9 +928,7 @@
 
                 Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
 
-                fetch(GAS_URL, { 
-                    method: 'POST', body: JSON.stringify({ action: 'deleteSlip', id: id, year: year }) 
-                }).then(res => res.json())
+                fetchGAS({ action: 'deleteSlip', id: id, year: year })
                 .then(data => { 
                     if(data.status === "success") { 
                         sessionRecords = sessionRecords.filter(x => x.id !== id); 
@@ -958,6 +945,5 @@
     }
     
     checkSession();
-</script>
-</body>
+</script></body>
 </html>
