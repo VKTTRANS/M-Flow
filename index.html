@@ -301,7 +301,6 @@
     async function fetchGAS(payload) {
         let res = await fetch(GAS_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         });
         
@@ -314,7 +313,6 @@
             }
             return data;
         } catch (err) {
-            // ดักจับ Error HTML หน้า 404 ของ Google
             if(text.includes("ไม่สามารถเปิดไฟล์ได้ในเวลานี้") || text.includes("<html") || text.includes("Drive - Sorry")) {
                 throw new Error("เซิร์ฟเวอร์ Google ทำงานหนักเกินไป (โหลดภาพหลายใบไม่ทัน) โปรดลองกดสร้างใหม่อีกครั้งครับ");
             }
@@ -441,7 +439,6 @@
         let groupedData = {};
         dataArray.forEach(row => {
             let safeDate = displaySafeDate(row.paymentDate);
-            // แยกแถวตาม เดือน + สัปดาห์ + วันที่จ่ายเงิน อย่างชัดเจน
             let key = `${row.month}|${row.week}|${safeDate}`;
             if (!groupedData[key]) { 
                 groupedData[key] = { month: row.month, week: row.week, paymentDate: safeDate, dateRange: row.dateRange, items: [], totalAmount: 0 }; 
@@ -470,7 +467,6 @@
                     </tr>`; 
             });
             
-            // เช็คเอกสารรวมของสัปดาห์นี้
             let pdfLink = globalDocLinks[`${group.month}|${group.week}`];
             let statusHtml = "";
             if (pdfLink) {
@@ -485,7 +481,6 @@
                 headerEditBtn = `<div class="ps-3 border-start border-secondary py-2 ms-2 d-flex align-items-center"><button class="btn btn-warning btn-sm fw-bold px-3 py-1 text-dark" style="white-space: nowrap;" onclick="openEditBatch('${group.month}', '${group.week}')"><i class="bi bi-pencil-square me-1"></i> แก้ไข</button></div>`;
             }
 
-            // แสดงหน้าตา UI โดยระบุวันที่จ่ายต่อท้ายให้ชัดเจน
             fullHtml += `
                 <div class="accordion-item border-0 mb-3 shadow-sm" style="background-color: #1e293b; border-radius: 10px; overflow: hidden;">
                     <div class="d-flex align-items-center flex-nowrap w-100 bg-dark bg-opacity-50 pe-2">
@@ -650,7 +645,6 @@
                     let sDate = initData.sDate;
                     let eDate = initData.eDate;
                     
-                    // ปรับลดจำนวนที่ดึงต่อรอบเหลือ 4 คัน เพื่อป้องกัน Google Drive Error 404 (Memory เต็ม)
                     let chunkSize = 4; 
                     let totalPlates = platesData.length;
                     let processedPlates = 0;
