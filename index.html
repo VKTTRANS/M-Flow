@@ -314,7 +314,7 @@
             return data;
         } catch (err) {
             if(text.includes("ไม่สามารถเปิดไฟล์ได้ในเวลานี้") || text.includes("<html") || text.includes("Drive - Sorry")) {
-                throw new Error("เซิร์ฟเวอร์ Google ทำงานหนักเกินไป (โหลดภาพหลายใบไม่ทัน) โปรดลองกดสร้างใหม่อีกครั้งครับ");
+                throw new Error("เซิร์ฟเวอร์ Google ทำงานหนักเกินไป (โหลดภาพหลายใบไม่ทัน) โปรดลองลดจำนวนหรือกดสร้างใหม่อีกครั้งครับ");
             }
             throw new Error(err.message || text);
         }
@@ -640,36 +640,46 @@
                     
                     if (initData.status !== 'success') throw new Error(initData.message);
 
-                    let tempSsId = initData.tempSsId;
+                    // สร้าง Array เก็บ ID ของไฟล์ Temp แต่ละก้อน
+                    let chunkFileIds = [initData.tempSsId];
                     let platesData = initData.platesData;
                     let sDate = initData.sDate;
                     let eDate = initData.eDate;
                     
-                    let chunkSize = 4; 
+                    // ปรับขนาด Chunk ได้ถึง 8 สบายๆ แล้ว เพราะไม่ได้โหลดหนักไฟล์เดียว
+                    let chunkSize = 8; 
                     let totalPlates = platesData.length;
                     let processedPlates = 0;
 
                     for (let i = 0; i < totalPlates; i += chunkSize) {
                         let chunk = platesData.slice(i, i + chunkSize);
                         let chunkData = await fetchGAS({
-                            action: 'processPDFChunk', tempSsId: tempSsId, chunk: chunk, sDate: sDate, eDate: eDate
+                            action: 'processPDFChunk', chunk: chunk, sDate: sDate, eDate: eDate
                         });
                         
                         if (chunkData.status !== 'success') throw new Error(chunkData.message);
+                        
+                        // เก็บ ID ไฟล์ที่เพิ่งสร้างเอาไว้ส่งไปรวมร่างตอนจบ
+                        chunkFileIds.push(chunkData.chunkFileId);
 
                         processedPlates += chunk.length;
                         let percent = Math.round((processedPlates / totalPlates) * 100);
                         document.getElementById('pdfProgressBar').style.width = percent + '%';
                         document.getElementById('pdfProgressBar').innerText = percent + '%';
                         document.getElementById('pdfProgressText').innerText = `กำลังดึงสลิปคันที่ ${processedPlates} / ${totalPlates} คัน...`;
+                        
+                        // พักหายใจ 1 วินาที ให้เซิร์ฟเวอร์ Google โล่ง
+                        await new Promise(res => setTimeout(res, 1000));
                     }
 
-                    document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกเอกสาร...';
+                    document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกเอกสารและชีต...';
                     
+                    // ส่ง Array ไฟล์ทั้งหมดไปมัดรวมกันที่ Backend
                     let finalData = await fetchGAS({
-                        action: 'finalizePDF', tempSsId: tempSsId, year: selectedYear,
+                        action: 'finalizePDF', chunkFileIds: chunkFileIds, year: selectedYear,
                         derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek,
-                        sDate: initData.sDate, eDate: initData.eDate, grandTotal: initData.grandTotal 
+                        sDate: initData.sDate, eDate: initData.eDate, grandTotal: initData.grandTotal,
+                        docNo: initData.docNo
                     });
                     
                     if (finalData.status !== 'success') throw new Error(finalData.message);
