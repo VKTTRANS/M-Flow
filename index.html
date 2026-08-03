@@ -322,14 +322,14 @@
     let isBackgroundLoading = false; // ตัวแปรคอยเช็คสถานะการโหลดของเก่า
 
     async function fetchGAS(payload, retries = 3) {
-        const url = GAS_URL + "?t=" + new Date().getTime(); 
-        
         for (let i = 0; i <= retries; i++) {
             try {
-                let res = await fetch(url, {
+                // เอา ?t= ออก และใส่ headers กลับเข้าไป เพื่อป้องกัน Google เปลี่ยน POST เป็น GET
+                let res = await fetch(GAS_URL, {
                     method: 'POST',
-                    cache: 'no-store', 
-                    redirect: 'follow', 
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
                     body: JSON.stringify(payload)
                 });
                 
@@ -340,22 +340,28 @@
                 }
                 
                 let data = JSON.parse(text);
+                
+                // กันเหนียว เผื่อ Google รวนอีก
                 if (data.message === "Backend Ready!") {
-                    throw new Error("Deploy_Error"); 
+                    throw new Error("Redirect_To_GET");
                 }
+                
                 return data; 
                 
             } catch (err) {
-                if (err.message === "Deploy_Error") {
-                    throw new Error("พบโค้ดเวอร์ชันเก่า - โปรดตรวจสอบว่าตอน Deploy ได้กดเลือก 'New Version' แล้วหรือยัง");
+                if (err.message === "Redirect_To_GET") {
+                    if (i === retries) {
+                        throw new Error("ระบบ Google รวน (เปลี่ยนคำสั่งเป็น GET อัตโนมัติ) โปรดตรวจสอบลิงก์ GAS_URL ให้แน่ใจว่าลงท้ายด้วย /exec");
+                    }
                 }
                 
+                // ถ้ายิงแล้วสะดุด ให้รอ 2 วินาทีแล้วแอบยิงใหม่เงียบๆ (ไม่มี Error เด้งกวนใจ)
                 if (i < retries) {
-                    console.warn(`[ระบบ] เซิร์ฟเวอร์สะดุด... กำลังลองยิงซ้ำรอบที่ ${i + 1}`);
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); 
+                    console.warn(`[ระบบ] สะดุด... กำลังลองยิงซ้ำรอบที่ ${i + 1}`);
+                    await new Promise(resolve => setTimeout(resolve, 2000)); 
                     continue;
                 } else {
-                    throw new Error("เซิร์ฟเวอร์ Google ปฏิเสธการเชื่อมต่อหลายครั้ง โปรดตรวจสอบอินเทอร์เน็ตหรือรีเฟรชหน้าจอครับ");
+                    throw new Error("เซิร์ฟเวอร์ Google ทำงานหนักเกินไป หรืออินเทอร์เน็ตหลุด กรุณาลองใหม่อีกครั้งครับ");
                 }
             }
         }
