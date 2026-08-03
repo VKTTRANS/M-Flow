@@ -319,8 +319,8 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwyCZR0pWSUrHspbIHOnUXVOux3vThqbKu5yOX8uWFPewCjvkuqyFqohFqc_TLTjYwd/exec"; 
     let appData = [], globalDocLinks = {}, currentUserRole = "", slipQueue = [], currentIndex = 0, currentBase64 = "", sessionRecords = [], globalSetup = {};
     let isEditBatchMode = false; 
+    let isBackgroundLoading = false; // ตัวแปรคอยเช็คสถานะการโหลดของเก่า
 
-    // ระบบกัน Cache และ 404
     async function fetchGAS(payload, retries = 3) {
         const url = GAS_URL + "?t=" + new Date().getTime(); 
         
@@ -423,23 +423,59 @@
 
     function logout() { localStorage.removeItem('mflow_session'); location.reload(); }
 
+    // 🚀 อัปเดตใหม่: ฟังก์ชันดึงข้อมูลแบบแบ่ง 2 สเต็ป (หน้าบ้าน)
     function loadDashboardData() {
         const selectedYear = document.getElementById('filterYear').value;
         document.querySelectorAll('.currentYearLabel').forEach(el => { el.innerText = selectedYear; });
 
-        fetchGAS({ action: 'getData', year: selectedYear })
+        // คำนวณหาเดือนปัจจุบัน และเดือนที่แล้ว แบบเป๊ะๆ ตามรายการที่มีในระบบ
+        const monthNames = ["01_Jan", "02_Feb", "03_Mar", "04_Apr", "05_May", "06_Jun", "07_Jul", "08_Aug", "09_Sep", "10_Oct", "11_Nov", "12_Dec"];
+        let d = new Date();
+        let cIdx = d.getMonth();
+        let pIdx = cIdx === 0 ? 11 : cIdx - 1;
+        let recentMonths = [monthNames[cIdx], monthNames[pIdx]];
+
+        // ล้างข้อมูลเก่าบนจอก่อน
+        document.getElementById('dataAccordion').innerHTML = `<div class="text-center text-secondary py-5"><div class="spinner-border spinner-border-sm text-primary mb-2"></div><br>กำลังโหลดข้อมูลล่าสุด...</div>`;
+
+        // 1. สั่งดึงข้อมูลแค่ 2 เดือนล่าสุด (โหลดเร็ว)
+        fetchGAS({ action: 'getData', year: selectedYear, fetchMode: 'recent', months: recentMonths })
         .then(data => {
             if (data.status === "success") { 
                 appData = data.data; 
                 globalDocLinks = data.docLinks || {}; 
                 applyFilters(); 
+                
                 if (data.plates && data.plates.length > 0) {
                     const dl = document.getElementById('plateList'); 
                     dl.innerHTML = "";
                     data.plates.forEach(p => dl.innerHTML += `<option value="${p}">`);
                 }
+
+                // 2. ดึงข้อมูลเดือนเก่าๆ ที่เหลือแบบเบื้องหลัง (Background Load)
+                if (!isBackgroundLoading) {
+                    isBackgroundLoading = true;
+                    // หน่วงเวลา 1 วินาที ให้หน้าจอเรนเดอร์เสร็จก่อน ค่อยไปกวน Server
+                    setTimeout(() => {
+                        fetchGAS({ action: 'getData', year: selectedYear, fetchMode: 'older', excludeMonths: recentMonths })
+                        .then(oldData => {
+                            if (oldData.status === "success" && oldData.data.length > 0) {
+                                // เอาข้อมูลเก่ามาต่อท้าย (หรือแทรก) แล้วอัปเดตหน้าจอเนียนๆ
+                                appData = appData.concat(oldData.data);
+                                applyFilters();
+                            }
+                            isBackgroundLoading = false;
+                        }).catch(err => { 
+                            isBackgroundLoading = false; 
+                            console.warn("โหลดข้อมูลเก่าไม่สำเร็จ จะโหลดอีกทีเมื่อมีการรีเฟรชหน้า", err); 
+                        });
+                    }, 1000);
+                }
             }
-        }).catch(err => console.error(err));
+        }).catch(err => {
+            document.getElementById('dataAccordion').innerHTML = `<div class="text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><br>โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรช</div>`;
+            console.error(err);
+        });
     }
 
     function applyFilters() {
@@ -602,7 +638,6 @@
         return ids;
     }
 
-    // ฟังก์ชันนี้เก็บไว้ให้ใช้กดส้ราง PDF ซ้ำได้จากหน้า Dashboard
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); 
         if(!ids) return;
@@ -1027,7 +1062,6 @@
         }
     }
 
-    // 🚀 เพิ่มใหม่: ยิงคำสั่งเดียวรวบยอดทั้งหมด
     async function confirmAndUploadAll() {
         document.getElementById('importSummaryView').classList.add('hidden');
         document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -1047,7 +1081,6 @@
         }
 
         try {
-            // ยิงข้อมูล 66 ใบไปให้ Server ทำงานรวดเดียวเลย 
             let res = await fetchGAS({
                 action: 'saveAllAndGeneratePDF',
                 year: globalSetup.year,
