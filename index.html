@@ -322,13 +322,13 @@
     let globalRecentMonths = [];
     let isOlderLoaded = false;
 
-    // 🔥 โค้ดที่แก้แล้ว: เอาตัวปัญหาออกทั้งหมด คลีนและเสถียร 100%
     async function fetchGAS(payload, retries = 3) {
         for (let i = 0; i <= retries; i++) {
             try {
                 let res = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    credentials: 'omit',
                     body: JSON.stringify(payload)
                 });
                 
@@ -720,57 +720,29 @@
 
     async function generatePDFOldWay(ids, year, fwBalance, tDate, tTime, tAmount) {
         document.getElementById('loadingOverlay').classList.remove('hidden'); 
-        document.getElementById('pdfProgressBar').style.width = '0%';
-        document.getElementById('pdfProgressBar').innerText = '0%';
-        document.getElementById('pdfProgressText').innerText = 'กำลังเตรียมใบปะหน้าสรุป...';
+        document.getElementById('pdfProgressBar').style.width = '50%';
+        document.getElementById('pdfProgressBar').innerText = 'กำลังสร้าง PDF...';
+        document.getElementById('pdfProgressText').innerText = 'กำลังดึงข้อมูลและจัดทำเอกสาร (ใช้เวลาประมาณ 1-2 นาที)...';
 
         try {
-            let initData = await fetchGAS({ 
-                action: 'initPDF', ids: ids, year: year,
-                forwardBalance: fwBalance, transferDate: tDate, transferTime: tTime, transferAmount: tAmount 
+            let res = await fetchGAS({ 
+                action: 'generatePDFOnly', 
+                ids: ids, 
+                year: year,
+                forwardBalance: fwBalance, 
+                transferDate: tDate, 
+                transferTime: tTime, 
+                transferAmount: tAmount 
             });
             
-            if (initData.status !== 'success') throw new Error(initData.message);
+            if (res.status !== 'success') throw new Error(res.message);
 
-            let chunkFileIds = [initData.tempSsId];
-            let platesData = initData.platesData;
-            let sDate = initData.sDate;
-            let eDate = initData.eDate;
-            let chunkSize = 8; 
-            let totalPlates = platesData.length;
-            let processedPlates = 0;
-
-            for (let i = 0; i < totalPlates; i += chunkSize) {
-                let chunk = platesData.slice(i, i + chunkSize);
-                let chunkData = await fetchGAS({
-                    action: 'processPDFChunk', chunk: chunk, sDate: sDate, eDate: eDate
-                });
-                
-                if (chunkData.status !== 'success') throw new Error(chunkData.message);
-                chunkFileIds.push(chunkData.chunkFileId);
-
-                processedPlates += chunk.length;
-                let percent = Math.round((processedPlates / totalPlates) * 100);
-                document.getElementById('pdfProgressBar').style.width = percent + '%';
-                document.getElementById('pdfProgressBar').innerText = percent + '%';
-                document.getElementById('pdfProgressText').innerText = `กำลังดึงสลิปคันที่ ${processedPlates} / ${totalPlates} คัน...`;
-                await new Promise(res => setTimeout(res, 1000));
-            }
-
-            document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกเอกสารและชีต...';
-            
-            let finalData = await fetchGAS({
-                action: 'finalizePDF', chunkFileIds: chunkFileIds, year: year,
-                derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek,
-                sDate: initData.sDate, eDate: initData.eDate, grandTotal: initData.grandTotal,
-                docNo: initData.docNo
-            });
-            
-            if (finalData.status !== 'success') throw new Error(finalData.message);
-
+            document.getElementById('pdfProgressBar').style.width = '100%';
+            document.getElementById('pdfProgressBar').innerText = 'เสร็จสมบูรณ์!';
             document.getElementById('loadingOverlay').classList.add('hidden'); 
+            
             Swal.fire({ title: 'สำเร็จ!', text: 'เอกสารและชีตสำเร็จ!', icon: "success", confirmButtonText: 'เปิดไฟล์ PDF' }).then(() => { 
-                window.open(finalData.url, '_blank'); 
+                window.open(res.url, '_blank'); 
                 loadDashboardData(); 
             });
 
