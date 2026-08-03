@@ -17,12 +17,12 @@
 
     <div id="loadingOverlay" class="hidden">
         <div class="spinner-border text-info" style="width: 4rem; height: 4rem;" role="status"></div>
-        <h3 class="mt-4 text-info fw-bold" id="loadingTitle">ระบบกำลังประมวลผล...</h3>
+        <h3 class="mt-4 text-info fw-bold" id="loadingTitle">ระบบกำลังทำงาน...</h3>
         <div class="progress w-100 mt-4 shadow-sm" style="height: 30px; max-width: 600px; background-color: #334155; border-radius: 15px;">
             <div id="pdfProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success fw-bold fs-6" style="width: 0%;">0%</div>
         </div>
-        <p id="pdfProgressText" class="mt-3 text-warning fw-bold fs-5">กำลังเตรียมข้อมูล...</p>
-        <p class="text-secondary text-center mt-2">โปรดอย่าปิดหน้าต่างนี้จนกว่าจะเสร็จสิ้น (ระบบกำลังทยอยทำเพื่อป้องกันการค้าง)</p>
+        <p id="pdfProgressText" class="mt-3 text-warning fw-bold fs-5">กำลังโหลด...</p>
+        <p class="text-secondary text-center mt-2">โปรดอย่าปิดหน้าต่างนี้จนกว่าจะเสร็จสิ้น</p>
     </div>
 
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
@@ -86,7 +86,7 @@
                 
                 <div id="actionBar" class="d-flex align-items-center gap-2 hidden">
                     <span class="text-secondary small me-2"><i class="bi bi-arrow-right-short"></i> ดำเนินการ:</span>
-                    <button id="btnGenDoc" class="btn btn-outline-info btn-sm fw-bold px-3 hidden" onclick="requestGenerateAllPDFs()"><i class="bi bi-file-earmark-pdf"></i> สร้างเอกสารรวม</button>
+                    <button id="btnGenDoc" class="btn btn-outline-info btn-sm fw-bold px-3 hidden" onclick="requestGenerateAllPDFs()"><i class="bi bi-file-earmark-pdf"></i> สร้างเอกสารรวมใหม่</button>
                     <button id="btnExportCSV" class="btn btn-success btn-sm fw-bold px-3 hidden" onclick="processExportChecked()"><i class="bi bi-file-earmark-excel"></i> ดาวน์โหลด CSV</button>
                     <button id="btnImportSlip" class="btn btn-primary btn-sm fw-bold shadow-sm ms-3 px-3 hidden" onclick="openImportView()"><i class="bi bi-plus-circle"></i> นำเข้าสลิปใหม่</button>
                 </div>
@@ -227,15 +227,36 @@
                     <input type="date" id="setEndDate" class="form-control">
                 </div>
                 <div class="col-12 mt-3">
-                    <label class="form-label text-warning fw-bold small mb-1">วันที่ชำระเงิน</label>
+                    <label class="form-label text-warning fw-bold small mb-1">วันที่ชำระเงินในรอบนี้ (แสดงในตาราง PDF)</label>
                     <input type="date" id="setPaymentDate" class="form-control border-warning">
                 </div>
+                
+                <div class="col-12 border-bottom border-secondary pb-1 d-flex justify-content-between align-items-center mt-4">
+                    <span class="text-secondary small fw-bold text-info"><i class="bi bi-file-earmark-pdf"></i> ข้อมูลสำหรับจัดทำ PDF สรุปยอด</span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-secondary small mb-1">ยอดคงเหลือยกมา (ฐาน 80,000)</label>
+                    <input type="number" id="setForwardBalance" class="form-control bg-dark border-secondary">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-secondary small mb-1">ยอดเงินที่รับโอนเข้า</label>
+                    <input type="number" id="setTransferAmount" class="form-control bg-dark border-secondary">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-secondary small mb-1">วันที่รับโอนเงิน</label>
+                    <input type="date" id="setTransferDate" class="form-control bg-dark border-secondary">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-secondary small mb-1">เวลารับโอน (เช่น 12:30)</label>
+                    <input type="text" id="setTransferTime" class="form-control bg-dark border-secondary" placeholder="เช่น 12:30">
+                </div>
+
                 <div class="col-12 mt-3 p-3 border border-secondary border-dashed rounded bg-dark">
-                    <label class="form-label fw-bold text-light small d-block mb-2">เลือกสลิปที่ชำระในวันนี้</label>
+                    <label class="form-label fw-bold text-light small d-block mb-2">เลือกสลิปที่ชำระในรอบนี้ทั้งหมด</label>
                     <input type="file" id="slipFiles" class="form-control form-control-sm" multiple accept="image/*">
                 </div>
                 <div class="col-12 mt-3">
-                    <button class="btn btn-primary w-100 py-2" onclick="startImport()">เริ่มพิมพ์ข้อมูล</button>
+                    <button class="btn btn-primary w-100 py-2" onclick="startImport()">เริ่มพิมพ์ข้อมูลและเตรียมอัปโหลด</button>
                 </div>
             </div>
         </div>
@@ -289,7 +310,7 @@
                     <tbody id="importSummaryTableBody"></tbody>
                 </table>
             </div>
-            <button id="btnFinalizeImport" class="btn btn-primary w-100 py-3" onclick="finalizeAction()"><i class="bi bi-cloud-upload"></i> ยืนยันและเริ่มอัปโหลดเข้าระบบ</button>
+            <button id="btnFinalizeImport" class="btn btn-primary w-100 py-3" onclick="finalizeAction()"><i class="bi bi-cloud-upload"></i> ยืนยันข้อมูล อัปโหลดเข้าระบบ และสร้าง PDF ทันที</button>
         </div>
     </div>
 
@@ -297,33 +318,48 @@
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwyCZR0pWSUrHspbIHOnUXVOux3vThqbKu5yOX8uWFPewCjvkuqyFqohFqc_TLTjYwd/exec"; 
     let appData = [], globalDocLinks = {}, currentUserRole = "", slipQueue = [], currentIndex = 0, currentBase64 = "", sessionRecords = [], globalSetup = {};
-    let isEditBatchMode = false; // ตัวแปรเช็คสถานะการเข้าหน้าสรุป
+    let isEditBatchMode = false; 
 
-    async function fetchGAS(payload) {
-            let res = await fetch(GAS_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'
-                },
-                body: JSON.stringify(payload),
-                credentials: 'omit'
-            });
-            
-            let text = await res.text();
-            
+    // ระบบกัน Cache และ 404
+    async function fetchGAS(payload, retries = 3) {
+        const url = GAS_URL + "?t=" + new Date().getTime(); 
+        
+        for (let i = 0; i <= retries; i++) {
             try {
+                let res = await fetch(url, {
+                    method: 'POST',
+                    cache: 'no-store', 
+                    redirect: 'follow', 
+                    body: JSON.stringify(payload)
+                });
+                
+                let text = await res.text();
+                
+                if (!res.ok || text.includes("<html") || text.includes("Drive - Sorry")) {
+                    throw new Error("Bad_Response");
+                }
+                
                 let data = JSON.parse(text);
                 if (data.message === "Backend Ready!") {
-                    throw new Error("ระบบเรียกทำงานผิดพลาด - โปรดตรวจสอบการ Deploy New Version ใน Apps Script");
+                    throw new Error("Deploy_Error"); 
                 }
-                return data;
+                return data; 
+                
             } catch (err) {
-                if(text.includes("ไม่สามารถเปิดไฟล์ได้ในเวลานี้") || text.includes("<html") || text.includes("Drive - Sorry")) {
-                    throw new Error("เซิร์ฟเวอร์ Google ทำงานหนักเกินไป กรุณาลองใหม่อีกครั้งครับ");
+                if (err.message === "Deploy_Error") {
+                    throw new Error("พบโค้ดเวอร์ชันเก่า - โปรดตรวจสอบว่าตอน Deploy ได้กดเลือก 'New Version' แล้วหรือยัง");
                 }
-                throw new Error(err.message || text);
+                
+                if (i < retries) {
+                    console.warn(`[ระบบ] เซิร์ฟเวอร์สะดุด... กำลังลองยิงซ้ำรอบที่ ${i + 1}`);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); 
+                    continue;
+                } else {
+                    throw new Error("เซิร์ฟเวอร์ Google ปฏิเสธการเชื่อมต่อหลายครั้ง โปรดตรวจสอบอินเทอร์เน็ตหรือรีเฟรชหน้าจอครับ");
+                }
             }
         }
+    }
 
     function formatThaiDate(dateStr) { 
         if(!dateStr) return "";
@@ -566,16 +602,17 @@
         return ids;
     }
 
+    // ฟังก์ชันนี้เก็บไว้ให้ใช้กดส้ราง PDF ซ้ำได้จากหน้า Dashboard
     function requestGenerateAllPDFs() {
         const ids = getSelectedIds(); 
         if(!ids) return;
 
         const selectedYear = document.getElementById('filterYear').value;
         let selectedItems = appData.filter(r => ids.includes(r.id));
-        let uniqueWeeks = [...new Set(selectedItems.map(r => `${r.month}|${r.week}`))];
         
+        let uniqueWeeks = [...new Set(selectedItems.map(r => `${r.month}|${r.week}`))];
         if (uniqueWeeks.length > 1) {
-            Swal.fire({ title: 'ข้อควรระวัง!', html: 'กรุณาเลือกทำเอกสาร <b>ทีละ 1 สัปดาห์</b> ครับ (แต่สัปดาห์เดียวกัน ข้ามวันจ่ายได้)', icon: 'warning', confirmButtonColor: '#3b82f6', confirmButtonText: 'เข้าใจแล้ว' });
+            Swal.fire({ title: 'ข้อควรระวัง!', html: 'กรุณาเลือกทำเอกสาร <b>ทีละ 1 สัปดาห์</b> ครับ', icon: 'warning', confirmButtonColor: '#3b82f6', confirmButtonText: 'เข้าใจแล้ว' });
             return;
         }
 
@@ -584,9 +621,8 @@
         let allUniqueKeys = [...new Set(appData.map(r => `${r.month}|${r.week}`))].sort();
         let currentIndex = allUniqueKeys.indexOf(currentKey);
         
-        let suggestedBalance = "";
-        let suggestedTransfer = "";
-
+        let suggestedBalance = 80000;
+        let suggestedTransfer = 0;
         if (currentIndex > 0) {
             let prevKey = allUniqueKeys[currentIndex - 1];
             let [prevMonth, prevWeek] = prevKey.split('|');
@@ -596,7 +632,7 @@
         }
 
         Swal.fire({
-            title: 'ตั้งค่าเอกสาร (' + selectedYear + ')',
+            title: 'สร้างเอกสารใหม่ (' + selectedYear + ')',
             html: `
                 <div class="mb-3 text-start">
                     <label class="form-label text-secondary small">ยอดคงเหลือยกมา (ฐาน 80,000 บาท)</label>
@@ -627,82 +663,72 @@
             if (result.isConfirmed) {
                 let fwBalance = parseFloat(result.value.balance) || 0;
                 let tAmount = parseFloat(result.value.tamount) || 0;
-                let tDateRaw = result.value.date;
-                let tTimeRaw = result.value.time;
-                
-                let formattedDate = tDateRaw ? formatThaiDate(tDateRaw) : "";
-
-                document.getElementById('loadingOverlay').classList.remove('hidden'); 
-                document.getElementById('pdfProgressBar').style.width = '0%';
-                document.getElementById('pdfProgressBar').innerText = '0%';
-                document.getElementById('pdfProgressText').innerText = 'กำลังเตรียมใบปะหน้าสรุป...';
-
-                try {
-                    let initData = await fetchGAS({ 
-                        action: 'initPDF', ids: ids, year: selectedYear,
-                        forwardBalance: fwBalance, transferDate: formattedDate, transferTime: tTimeRaw, transferAmount: tAmount 
-                    });
-                    
-                    if (initData.status !== 'success') throw new Error(initData.message);
-
-                    let chunkFileIds = [initData.tempSsId];
-                    let platesData = initData.platesData;
-                    let sDate = initData.sDate;
-                    let eDate = initData.eDate;
-                    
-                    let chunkSize = 8; 
-                    let totalPlates = platesData.length;
-                    let processedPlates = 0;
-
-                    for (let i = 0; i < totalPlates; i += chunkSize) {
-                        let chunk = platesData.slice(i, i + chunkSize);
-                        let chunkData = await fetchGAS({
-                            action: 'processPDFChunk', chunk: chunk, sDate: sDate, eDate: eDate
-                        });
-                        
-                        if (chunkData.status !== 'success') throw new Error(chunkData.message);
-                        
-                        chunkFileIds.push(chunkData.chunkFileId);
-
-                        processedPlates += chunk.length;
-                        let percent = Math.round((processedPlates / totalPlates) * 100);
-                        document.getElementById('pdfProgressBar').style.width = percent + '%';
-                        document.getElementById('pdfProgressBar').innerText = percent + '%';
-                        document.getElementById('pdfProgressText').innerText = `กำลังดึงสลิปคันที่ ${processedPlates} / ${totalPlates} คัน...`;
-                        
-                        await new Promise(res => setTimeout(res, 1000));
-                    }
-
-                    document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกเอกสารและชีต...';
-                    
-                    let finalData = await fetchGAS({
-                        action: 'finalizePDF', chunkFileIds: chunkFileIds, year: selectedYear,
-                        derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek,
-                        sDate: initData.sDate, eDate: initData.eDate, grandTotal: initData.grandTotal,
-                        docNo: initData.docNo
-                    });
-                    
-                    if (finalData.status !== 'success') throw new Error(finalData.message);
-
-                    document.getElementById('loadingOverlay').classList.add('hidden'); 
-                    
-                    Swal.fire({ 
-                        title: finalData.icon === "success" ? 'สร้างสำเร็จ!' : 'เอกสารและชีตสำเร็จ!', 
-                        text: finalData.message, 
-                        icon: finalData.icon || "success", 
-                        confirmButtonText: 'เปิดไฟล์ PDF' 
-                    }).then(() => { 
-                        window.open(finalData.url, '_blank'); 
-                        loadDashboardData(); 
-                    });
-
-                } catch (error) {
-                    console.error(error);
-                    document.getElementById('loadingOverlay').classList.add('hidden'); 
-                    Swal.fire('ขัดข้อง', error.message, 'error');
-                }
+                let formattedDate = result.value.date ? formatThaiDate(result.value.date) : "";
+                generatePDFOldWay(ids, selectedYear, fwBalance, formattedDate, result.value.time, tAmount);
             }
         });
+    }
+
+    async function generatePDFOldWay(ids, year, fwBalance, tDate, tTime, tAmount) {
+        document.getElementById('loadingOverlay').classList.remove('hidden'); 
+        document.getElementById('pdfProgressBar').style.width = '0%';
+        document.getElementById('pdfProgressBar').innerText = '0%';
+        document.getElementById('pdfProgressText').innerText = 'กำลังเตรียมใบปะหน้าสรุป...';
+
+        try {
+            let initData = await fetchGAS({ 
+                action: 'initPDF', ids: ids, year: year,
+                forwardBalance: fwBalance, transferDate: tDate, transferTime: tTime, transferAmount: tAmount 
+            });
+            
+            if (initData.status !== 'success') throw new Error(initData.message);
+
+            let chunkFileIds = [initData.tempSsId];
+            let platesData = initData.platesData;
+            let sDate = initData.sDate;
+            let eDate = initData.eDate;
+            let chunkSize = 8; 
+            let totalPlates = platesData.length;
+            let processedPlates = 0;
+
+            for (let i = 0; i < totalPlates; i += chunkSize) {
+                let chunk = platesData.slice(i, i + chunkSize);
+                let chunkData = await fetchGAS({
+                    action: 'processPDFChunk', chunk: chunk, sDate: sDate, eDate: eDate
+                });
+                
+                if (chunkData.status !== 'success') throw new Error(chunkData.message);
+                chunkFileIds.push(chunkData.chunkFileId);
+
+                processedPlates += chunk.length;
+                let percent = Math.round((processedPlates / totalPlates) * 100);
+                document.getElementById('pdfProgressBar').style.width = percent + '%';
+                document.getElementById('pdfProgressBar').innerText = percent + '%';
+                document.getElementById('pdfProgressText').innerText = `กำลังดึงสลิปคันที่ ${processedPlates} / ${totalPlates} คัน...`;
+                await new Promise(res => setTimeout(res, 1000));
+            }
+
+            document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกเอกสารและชีต...';
+            
+            let finalData = await fetchGAS({
+                action: 'finalizePDF', chunkFileIds: chunkFileIds, year: year,
+                derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek,
+                sDate: initData.sDate, eDate: initData.eDate, grandTotal: initData.grandTotal,
+                docNo: initData.docNo
+            });
+            
+            if (finalData.status !== 'success') throw new Error(finalData.message);
+
+            document.getElementById('loadingOverlay').classList.add('hidden'); 
+            Swal.fire({ title: 'สำเร็จ!', text: 'เอกสารและชีตสำเร็จ!', icon: "success", confirmButtonText: 'เปิดไฟล์ PDF' }).then(() => { 
+                window.open(finalData.url, '_blank'); 
+                loadDashboardData(); 
+            });
+
+        } catch (error) {
+            document.getElementById('loadingOverlay').classList.add('hidden'); 
+            Swal.fire('ขัดข้องตอนสร้าง PDF', error.message, 'error').then(loadDashboardData);
+        }
     }
 
     function processExportChecked() {
@@ -724,7 +750,7 @@
     }
 
     function openEditBatch(month, week) {
-        isEditBatchMode = true; // โหมดแก้ไขของเก่าในระบบ
+        isEditBatchMode = true; 
         const selectedYear = document.getElementById('filterYear').value;
         document.getElementById('dashboardView').classList.add('hidden'); 
         document.getElementById('importView').classList.remove('hidden');
@@ -734,7 +760,7 @@
         document.getElementById('importSummaryView').classList.remove('hidden');
         
         sessionRecords = appData.filter(r => r.month === month && r.week === week).map(r => ({ 
-            id: r.id, plate: r.plate, amount: r.amount, date: displaySafeDate(r.paymentDate), year: selectedYear
+            id: r.id, plate: r.plate, amount: r.amount, date: displaySafeDate(r.paymentDate), year: selectedYear, uploaded: true
         })); 
         renderSummaryTable();
     }
@@ -750,6 +776,30 @@
         status.innerText = "กำลังค้นหาประวัติ..."; 
         status.className = "status-badge bg-info text-dark";
         
+        let allUniqueKeys = [...new Set(appData.map(r => `${r.month}|${r.week}`))].sort();
+        let currentKey = `${m}|${w}`;
+        let currentIndex = allUniqueKeys.indexOf(currentKey);
+        let suggestedBalance = 80000;
+        let suggestedTransfer = 0;
+        
+        if (allUniqueKeys.length > 0) {
+            let prevKey = "";
+            if (currentIndex > 0) {
+                prevKey = allUniqueKeys[currentIndex - 1]; 
+            } else if (currentIndex === -1) {
+                prevKey = allUniqueKeys[allUniqueKeys.length - 1]; 
+            }
+            
+            if (prevKey) {
+                let [prevMonth, prevWeek] = prevKey.split('|');
+                let prevExpenses = appData.filter(r => r.month === prevMonth && r.week === prevWeek).reduce((sum, r) => sum + parseFloat(r.amount), 0);
+                suggestedBalance = 80000 - prevExpenses;
+                suggestedTransfer = prevExpenses; 
+            }
+        }
+        document.getElementById('setForwardBalance').value = suggestedBalance;
+        document.getElementById('setTransferAmount').value = suggestedTransfer;
+
         fetchGAS({ action: 'getDateRange', month: m, week: w, year: y })
         .then(data => {
             if (data.status === "success") { 
@@ -768,7 +818,7 @@
     }
 
     function openImportView() {
-        isEditBatchMode = false; // โหมดเตรียมนำเข้าใหม่
+        isEditBatchMode = false; 
         document.getElementById('dashboardView').classList.add('hidden'); 
         document.getElementById('importView').classList.remove('hidden');
         document.getElementById('importTitle').innerHTML = `<i class="bi bi-cloud-arrow-up"></i> IMPORT SLIPS`;
@@ -776,6 +826,8 @@
         document.getElementById('processingSection').classList.add('hidden');
         document.getElementById('importSummaryView').classList.add('hidden'); 
         sessionRecords = []; 
+        document.getElementById('setTransferDate').value = "";
+        document.getElementById('setTransferTime').value = "";
         lookupDateRange();
     }
     
@@ -791,7 +843,11 @@
         const pD = document.getElementById('setPaymentDate').value;
         const files = document.getElementById('slipFiles').files;
         
+        const fwBal = document.getElementById('setForwardBalance').value;
+        const tAmt = document.getElementById('setTransferAmount').value;
+        
         if(!sD || !eD || !pD) return Swal.fire('คำเตือน', 'โปรดระบุวันที่ให้ครบถ้วน', 'warning'); 
+        if(!fwBal) return Swal.fire('คำเตือน', 'โปรดระบุยอดคงเหลือยกมาก่อนครับ', 'warning');
         if(files.length === 0) return Swal.fire('คำเตือน', 'โปรดเลือกไฟล์สลิปก่อนครับ', 'warning');
         
         globalSetup = { 
@@ -800,29 +856,18 @@
             week: document.getElementById('setWeek').value, 
             dateRange: `${formatThaiDate(sD)} - ${formatThaiDate(eD)}`, 
             paymentDate: formatThaiDate(pD),
-            sessionId: new Date().getTime()
+            sessionId: new Date().getTime(),
+            forwardBalance: fwBal,
+            transferAmount: tAmt,
+            transferDateRaw: document.getElementById('setTransferDate').value,
+            transferTimeRaw: document.getElementById('setTransferTime').value
         };
         
-        // ค้นหา ID โฟลเดอร์ Google Drive ล่วงหน้าก่อน เพื่อลดภาระระบบตอนอัปโหลด
-        Swal.fire({ title: 'กำลังเตรียมระบบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
-        
-        fetchGAS({ action: 'prepareFolder', year: globalSetup.year, month: globalSetup.month, week: globalSetup.week })
-        .then(res => {
-            Swal.close();
-            if(res.status === 'success') {
-                globalSetup.folderId = res.folderId; // ได้รับ ID โฟลเดอร์เป้าหมาย
-                
-                slipQueue = Array.from(files); 
-                currentIndex = 0; 
-                document.getElementById('setupSection').classList.add('hidden'); 
-                document.getElementById('processingSection').classList.remove('hidden'); 
-                showCurrentSlip();
-            } else {
-                Swal.fire('ขัดข้อง', 'ไม่สามารถเตรียมโฟลเดอร์ใน Drive ได้ โปรดลองอีกครั้ง', 'error');
-            }
-        }).catch(err => {
-            Swal.fire('เครือข่ายขัดข้อง', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error');
-        });
+        slipQueue = Array.from(files); 
+        currentIndex = 0; 
+        document.getElementById('setupSection').classList.add('hidden'); 
+        document.getElementById('processingSection').classList.remove('hidden'); 
+        showCurrentSlip();
     }
 
     function showCurrentSlip() {
@@ -853,7 +898,6 @@
         reader.readAsDataURL(slipQueue[currentIndex]);
     }
 
-    // ฟังก์ชันใหม่: บันทึกลงหน่วยความจำอย่างเดียว ทันที! เร็วปรื๊ด
     function saveData() {
         const plate = document.getElementById('inputPlate').value;
         const amt = document.getElementById('inputAmount').value;
@@ -862,7 +906,6 @@
         
         const currentRowId = "MF-" + globalSetup.sessionId + "-" + currentIndex;
         
-        // พักเก็บไว้ในระบบก่อน ยังไม่อัปโหลด
         sessionRecords.push({ 
             id: currentRowId, plate: plate, amount: amt, date: globalSetup.paymentDate, year: globalSetup.year, base64: currentBase64, uploaded: false
         }); 
@@ -899,10 +942,9 @@
         document.getElementById('sumCount').innerText = sessionRecords.length; 
         document.getElementById('sumAmount').innerText = totalAmt.toLocaleString() + " ฿";
 
-        // เปลี่ยนข้อความปุ่มตามโหมด
         document.getElementById('btnFinalizeImport').innerHTML = isEditBatchMode 
             ? '<i class="bi bi-arrow-left"></i> กลับไปหน้าหลัก' 
-            : '<i class="bi bi-cloud-upload"></i> ยืนยันและเริ่มอัปโหลดเข้าระบบ';
+            : '<i class="bi bi-cloud-upload"></i> ยืนยันข้อมูล อัปโหลด และสร้าง PDF ทันที (ม้วนเดียวจบ)';
     }
 
     let modalInstance = null;
@@ -926,7 +968,6 @@
         const record = sessionRecords.find(x => x.id === id);
         if (!record) return;
         
-        // ถ้าเป็นโหมดแก้ไขข้อมูลเก่าที่เซฟไปแล้ว ต้องยิง API ไปอัปเดต
         if (isEditBatchMode) {
             Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
             fetchGAS({ action: 'updateSlip', id: id, plate: nPlate, amount: nAmt, paymentDate: nDate, year: record.year })
@@ -942,7 +983,6 @@
                 } else { Swal.fire('ขัดข้อง', data.message || 'ไม่สามารถแก้ไขได้', 'error'); }
             }).catch(err => { Swal.fire('ข้อผิดพลาดทางเครือข่าย', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error'); });
         } else {
-            // ถ้าเป็นข้อมูลที่กำลังพิมพ์ค้างไว้ (ยังไม่อัปโหลด) แค่แก้ใน RAM เลย
             const idx = sessionRecords.findIndex(x => x.id === id); 
             sessionRecords[idx].plate = nPlate; 
             sessionRecords[idx].amount = nAmt; 
@@ -972,7 +1012,6 @@
                         } else { Swal.fire('ขัดข้อง', data.message || 'ไม่สามารถลบได้', 'error'); }
                     }).catch(err => { Swal.fire('ข้อผิดพลาดทางเครือข่าย', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error'); });
                 } else {
-                    // ลบใน RAM ทันทีสำหรับโหมดพิมพ์
                     sessionRecords = sessionRecords.filter(x => x.id !== id); 
                     renderSummaryTable(); 
                 }
@@ -988,53 +1027,63 @@
         }
     }
 
-    // ฟังก์ชันใหม่: อัปโหลดทีเดียวตอนจบ ทำให้หน้าตาสวยงามและไม่รบกวนคนพิมพ์
+    // 🚀 เพิ่มใหม่: ยิงคำสั่งเดียวรวบยอดทั้งหมด
     async function confirmAndUploadAll() {
         document.getElementById('importSummaryView').classList.add('hidden');
         document.getElementById('loadingOverlay').classList.remove('hidden');
-        
-        let total = sessionRecords.length;
-        
-        for (let i = 0; i < total; i++) {
-            let r = sessionRecords[i];
-            
-            // ข้ามใบที่ส่งสำเร็จไปแล้ว (ใช้กรณีเน็ตหลุดกลางคันแล้วกดส่งซ้ำ)
-            if (r.uploaded) continue; 
-            
-            document.getElementById('pdfProgressText').innerText = `ระบบกำลังอัปโหลดและบันทึกใบที่ ${i + 1} / ${total}...`;
-            let percent = Math.round((i / total) * 100);
-            document.getElementById('pdfProgressBar').style.width = percent + '%';
-            document.getElementById('pdfProgressBar').innerText = percent + '%';
 
-            try {
-                let res = await fetchGAS({ 
-                    action: 'saveSlip', year: r.year, month: globalSetup.month, week: globalSetup.week, 
-                    dateRange: globalSetup.dateRange, plate: r.plate, amount: r.amount, paymentDate: r.date, 
-                    fileName: "slip_" + r.id + ".jpg", mimeType: "image/jpeg", fileBase64: r.base64,
-                    rowId: r.id, folderId: globalSetup.folderId // ใช้ ID Folder ตรงๆ เลย
-                });
-                
-                if(res.status === "success") { 
-                    r.uploaded = true; // มาร์คไว้ว่าเซฟสำเร็จแล้ว
-                } else {
-                    throw new Error(res.message);
-                }
-            } catch (err) {
-                document.getElementById('loadingOverlay').classList.add('hidden');
-                Swal.fire({ 
-                    title: 'เชื่อมต่อขัดข้อง', 
-                    text: `บันทึกค้างอยู่ที่ใบที่ ${i + 1} กรุณากดปุ่ม "ยืนยันและเริ่มอัปโหลดเข้าระบบ" อีกครั้ง เพื่อทำงานต่อจากเดิม`, 
-                    icon: 'warning' 
-                });
-                document.getElementById('importSummaryView').classList.remove('hidden');
-                return; // หยุดลูป
-            }
-        }
+        document.getElementById('pdfProgressText').innerText = 'กำลังอัปโหลดและสร้าง PDF แบบรวดเดียวจบ (ใช้เวลา 1-2 นาที โปรดรอสักครู่)...';
+        document.getElementById('pdfProgressBar').style.width = '50%';
+        document.getElementById('pdfProgressBar').innerText = 'กำลังส่งข้อมูลและบันทึกลงระบบ...';
+
+        let recordsToUpload = sessionRecords.filter(r => !r.uploaded);
         
-        document.getElementById('loadingOverlay').classList.add('hidden');
-        Swal.fire('เสร็จสิ้น!', 'อัปโหลดสลิปทั้งหมดเข้าระบบเรียบร้อยแล้ว!', 'success').then(() => {
-            backToDashboard();
-        });
+        let tDateStr = "";
+        let tAmtRaw = parseFloat(globalSetup.transferAmount) || 0;
+        let tAmtStr = tAmtRaw ? tAmtRaw.toLocaleString('en-US',{minimumFractionDigits:2}) : "0.00";
+        if (globalSetup.transferDateRaw) {
+            tDateStr = formatThaiDate(globalSetup.transferDateRaw);
+            if (globalSetup.transferTimeRaw) tDateStr += " เวลา " + globalSetup.transferTimeRaw + " น.";
+        }
+
+        try {
+            // ยิงข้อมูล 66 ใบไปให้ Server ทำงานรวดเดียวเลย 
+            let res = await fetchGAS({
+                action: 'saveAllAndGeneratePDF',
+                year: globalSetup.year,
+                month: globalSetup.month,
+                week: globalSetup.week,
+                dateRange: globalSetup.dateRange,
+                transferDateStr: tDateStr,
+                transferAmountStr: tAmtStr,
+                records: recordsToUpload.map(r => ({
+                    id: r.id,
+                    plate: r.plate,
+                    amount: r.amount,
+                    date: r.date,
+                    base64: r.base64
+                }))
+            });
+
+            if (res.status === 'success') {
+                document.getElementById('pdfProgressBar').style.width = '100%';
+                document.getElementById('pdfProgressBar').innerText = 'เสร็จสมบูรณ์!';
+                sessionRecords.forEach(r => r.uploaded = true);
+
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                Swal.fire('เสร็จสิ้น!', 'บันทึกข้อมูลและสร้าง PDF เรียบร้อยแล้ว!', 'success').then(() => {
+                    window.open(res.url, '_blank');
+                    backToDashboard();
+                });
+            } else {
+                throw new Error(res.message);
+            }
+        } catch (err) {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            Swal.fire('ขัดข้อง', err.message, 'error').then(() => {
+                document.getElementById('importSummaryView').classList.remove('hidden');
+            });
+        }
     }
     
     checkSession();
