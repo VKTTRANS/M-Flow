@@ -17,7 +17,7 @@
 
     <div id="loadingOverlay" class="hidden">
         <div class="spinner-border text-info" style="width: 4rem; height: 4rem;" role="status"></div>
-        <h3 class="mt-4 text-info fw-bold" id="loadingTitle">กำลังประมวลผลเอกสาร...</h3>
+        <h3 class="mt-4 text-info fw-bold" id="loadingTitle">ระบบกำลังประมวลผล...</h3>
         <div class="progress w-100 mt-4 shadow-sm" style="height: 30px; max-width: 600px; background-color: #334155; border-radius: 15px;">
             <div id="pdfProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success fw-bold fs-6" style="width: 0%;">0%</div>
         </div>
@@ -235,7 +235,7 @@
                     <input type="file" id="slipFiles" class="form-control form-control-sm" multiple accept="image/*">
                 </div>
                 <div class="col-12 mt-3">
-                    <button class="btn btn-primary w-100 py-2" onclick="startImport()">เริ่มการนำเข้า</button>
+                    <button class="btn btn-primary w-100 py-2" onclick="startImport()">เริ่มพิมพ์ข้อมูล</button>
                 </div>
             </div>
         </div>
@@ -289,7 +289,7 @@
                     <tbody id="importSummaryTableBody"></tbody>
                 </table>
             </div>
-            <button class="btn btn-primary w-100 py-3" onclick="backToDashboard()"><i class="bi bi-check-circle"></i> ยืนยันยอด กลับไปหน้าหลัก</button>
+            <button id="btnFinalizeImport" class="btn btn-primary w-100 py-3" onclick="finalizeAction()"><i class="bi bi-cloud-upload"></i> ยืนยันและเริ่มอัปโหลดเข้าระบบ</button>
         </div>
     </div>
 
@@ -297,10 +297,12 @@
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwyCZR0pWSUrHspbIHOnUXVOux3vThqbKu5yOX8uWFPewCjvkuqyFqohFqc_TLTjYwd/exec"; 
     let appData = [], globalDocLinks = {}, currentUserRole = "", slipQueue = [], currentIndex = 0, currentBase64 = "", sessionRecords = [], globalSetup = {};
+    let isEditBatchMode = false; // ตัวแปรเช็คสถานะการเข้าหน้าสรุป
 
     async function fetchGAS(payload) {
         let res = await fetch(GAS_URL, {
             method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         });
         
@@ -309,12 +311,12 @@
         try {
             let data = JSON.parse(text);
             if (data.message === "Backend Ready!") {
-                throw new Error("ระบบเรียกทำงานผิดพลาด - โปรดตรวจสอบการ Deploy New Version ใน Apps Script (คุณอาจรันโค้ดเก่าอยู่)");
+                throw new Error("ระบบเรียกทำงานผิดพลาด - โปรดตรวจสอบการ Deploy New Version ใน Apps Script");
             }
             return data;
         } catch (err) {
             if(text.includes("ไม่สามารถเปิดไฟล์ได้ในเวลานี้") || text.includes("<html") || text.includes("Drive - Sorry")) {
-                throw new Error("เซิร์ฟเวอร์ Google ทำงานหนักเกินไป (โหลดภาพหลายใบไม่ทัน) โปรดลองลดจำนวนหรือกดสร้างใหม่อีกครั้งครับ");
+                throw new Error("เซิร์ฟเวอร์ Google ทำงานหนักเกินไป กรุณาลองใหม่อีกครั้งครับ");
             }
             throw new Error(err.message || text);
         }
@@ -640,13 +642,11 @@
                     
                     if (initData.status !== 'success') throw new Error(initData.message);
 
-                    // สร้าง Array เก็บ ID ของไฟล์ Temp แต่ละก้อน
                     let chunkFileIds = [initData.tempSsId];
                     let platesData = initData.platesData;
                     let sDate = initData.sDate;
                     let eDate = initData.eDate;
                     
-                    // ปรับขนาด Chunk ได้ถึง 8 สบายๆ แล้ว เพราะไม่ได้โหลดหนักไฟล์เดียว
                     let chunkSize = 8; 
                     let totalPlates = platesData.length;
                     let processedPlates = 0;
@@ -659,7 +659,6 @@
                         
                         if (chunkData.status !== 'success') throw new Error(chunkData.message);
                         
-                        // เก็บ ID ไฟล์ที่เพิ่งสร้างเอาไว้ส่งไปรวมร่างตอนจบ
                         chunkFileIds.push(chunkData.chunkFileId);
 
                         processedPlates += chunk.length;
@@ -668,13 +667,11 @@
                         document.getElementById('pdfProgressBar').innerText = percent + '%';
                         document.getElementById('pdfProgressText').innerText = `กำลังดึงสลิปคันที่ ${processedPlates} / ${totalPlates} คัน...`;
                         
-                        // พักหายใจ 1 วินาที ให้เซิร์ฟเวอร์ Google โล่ง
                         await new Promise(res => setTimeout(res, 1000));
                     }
 
                     document.getElementById('pdfProgressText').innerText = 'ประมวลผลเสร็จสิ้น กำลังบันทึกเอกสารและชีต...';
                     
-                    // ส่ง Array ไฟล์ทั้งหมดไปมัดรวมกันที่ Backend
                     let finalData = await fetchGAS({
                         action: 'finalizePDF', chunkFileIds: chunkFileIds, year: selectedYear,
                         derivedMonth: initData.derivedMonth, derivedWeek: initData.derivedWeek,
@@ -724,6 +721,7 @@
     }
 
     function openEditBatch(month, week) {
+        isEditBatchMode = true; // โหมดแก้ไขของเก่าในระบบ
         const selectedYear = document.getElementById('filterYear').value;
         document.getElementById('dashboardView').classList.add('hidden'); 
         document.getElementById('importView').classList.remove('hidden');
@@ -767,6 +765,7 @@
     }
 
     function openImportView() {
+        isEditBatchMode = false; // โหมดเตรียมนำเข้าใหม่
         document.getElementById('dashboardView').classList.add('hidden'); 
         document.getElementById('importView').classList.remove('hidden');
         document.getElementById('importTitle').innerHTML = `<i class="bi bi-cloud-arrow-up"></i> IMPORT SLIPS`;
@@ -797,14 +796,30 @@
             month: document.getElementById('setMonth').value, 
             week: document.getElementById('setWeek').value, 
             dateRange: `${formatThaiDate(sD)} - ${formatThaiDate(eD)}`, 
-            paymentDate: formatThaiDate(pD) 
+            paymentDate: formatThaiDate(pD),
+            sessionId: new Date().getTime()
         };
         
-        slipQueue = Array.from(files); 
-        currentIndex = 0; 
-        document.getElementById('setupSection').classList.add('hidden'); 
-        document.getElementById('processingSection').classList.remove('hidden'); 
-        showCurrentSlip();
+        // ค้นหา ID โฟลเดอร์ Google Drive ล่วงหน้าก่อน เพื่อลดภาระระบบตอนอัปโหลด
+        Swal.fire({ title: 'กำลังเตรียมระบบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+        
+        fetchGAS({ action: 'prepareFolder', year: globalSetup.year, month: globalSetup.month, week: globalSetup.week })
+        .then(res => {
+            Swal.close();
+            if(res.status === 'success') {
+                globalSetup.folderId = res.folderId; // ได้รับ ID โฟลเดอร์เป้าหมาย
+                
+                slipQueue = Array.from(files); 
+                currentIndex = 0; 
+                document.getElementById('setupSection').classList.add('hidden'); 
+                document.getElementById('processingSection').classList.remove('hidden'); 
+                showCurrentSlip();
+            } else {
+                Swal.fire('ขัดข้อง', 'ไม่สามารถเตรียมโฟลเดอร์ใน Drive ได้ โปรดลองอีกครั้ง', 'error');
+            }
+        }).catch(err => {
+            Swal.fire('เครือข่ายขัดข้อง', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error');
+        });
     }
 
     function showCurrentSlip() {
@@ -835,38 +850,22 @@
         reader.readAsDataURL(slipQueue[currentIndex]);
     }
 
+    // ฟังก์ชันใหม่: บันทึกลงหน่วยความจำอย่างเดียว ทันที! เร็วปรื๊ด
     function saveData() {
         const plate = document.getElementById('inputPlate').value;
         const amt = document.getElementById('inputAmount').value;
         
         if(!plate || !amt) return Swal.fire('คำเตือน', 'กรุณากรอกข้อมูลให้ครบ', 'warning');
         
-        const btn = document.getElementById('saveBtn'); 
-        btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> บันทึก...`; 
-        btn.disabled = true;
+        const currentRowId = "MF-" + globalSetup.sessionId + "-" + currentIndex;
         
-        fetchGAS({ 
-            action: 'saveSlip', year: globalSetup.year, month: globalSetup.month, week: globalSetup.week, 
-            dateRange: globalSetup.dateRange, plate: plate, amount: amt, paymentDate: globalSetup.paymentDate, 
-            fileName: slipQueue[currentIndex].name, mimeType: "image/jpeg", fileBase64: currentBase64 
-        }).then(data => {
-            if(data.status === "success") { 
-                sessionRecords.push({ 
-                    id: data.id, plate: plate, amount: amt, date: globalSetup.paymentDate, year: globalSetup.year
-                }); 
-                currentIndex++; 
-                btn.disabled = false; 
-                btn.innerHTML = `บันทึก & ถัดไป`; 
-                showCurrentSlip(); 
-            } else {
-                Swal.fire('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์', data.message, 'error');
-                btn.innerHTML = `บันทึก & ถัดไป`; 
-                btn.disabled = false;
-            }
-        }).catch(error => {
-            Swal.fire({ title: 'การเชื่อมต่อขัดข้อง!', text: 'เน็ตหลุดหรือคิวเต็ม กรุณากดปุ่ม "บันทึก & ถัดไป" เพื่อลองส่งใบนี้ใหม่อีกครั้งครับ', icon: 'error' });
-            btn.innerHTML = `บันทึก & ถัดไป`; btn.disabled = false;
-        });
+        // พักเก็บไว้ในระบบก่อน ยังไม่อัปโหลด
+        sessionRecords.push({ 
+            id: currentRowId, plate: plate, amount: amt, date: globalSetup.paymentDate, year: globalSetup.year, base64: currentBase64, uploaded: false
+        }); 
+        
+        currentIndex++; 
+        showCurrentSlip(); 
     }
 
     function showSessionSummary() { 
@@ -888,14 +887,19 @@
                     <td class='text-success fw-bold'>${r.amount}</td>
                     <td>${r.date}</td>
                     <td class="text-end pe-3">
-                        <button class="btn btn-sm btn-outline-warning rounded-circle me-1" onclick="openEditModal('${r.id}')"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteRecord('${r.id}')"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-outline-warning rounded-circle me-1" onclick="openEditModal('${r.id}')" ${r.uploaded ? 'disabled' : ''}><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteRecord('${r.id}')" ${r.uploaded ? 'disabled' : ''}><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>`; 
         });
         
         document.getElementById('sumCount').innerText = sessionRecords.length; 
         document.getElementById('sumAmount').innerText = totalAmt.toLocaleString() + " ฿";
+
+        // เปลี่ยนข้อความปุ่มตามโหมด
+        document.getElementById('btnFinalizeImport').innerHTML = isEditBatchMode 
+            ? '<i class="bi bi-arrow-left"></i> กลับไปหน้าหลัก' 
+            : '<i class="bi bi-cloud-upload"></i> ยืนยันและเริ่มอัปโหลดเข้าระบบ';
     }
 
     let modalInstance = null;
@@ -918,53 +922,115 @@
         const nDate = document.getElementById('editDate').value;
         const record = sessionRecords.find(x => x.id === id);
         if (!record) return;
-        const year = record.year;
         
-        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
-
-        fetchGAS({ action: 'updateSlip', id: id, plate: nPlate, amount: nAmt, paymentDate: nDate, year: year })
-        .then(data => { 
-            if(data.status === "success") { 
-                const idx = sessionRecords.findIndex(x => x.id === id); 
-                sessionRecords[idx].plate = nPlate; 
-                sessionRecords[idx].amount = nAmt; 
-                sessionRecords[idx].date = nDate; 
-                modalInstance.hide(); 
-                renderSummaryTable(); 
-                Swal.fire('สำเร็จ', 'อัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
-            } else {
-                Swal.fire('ขัดข้อง', data.message || 'ไม่สามารถแก้ไขได้', 'error');
-            }
-        }).catch(err => {
-            Swal.fire('ข้อผิดพลาดทางเครือข่าย', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error');
-        });
+        // ถ้าเป็นโหมดแก้ไขข้อมูลเก่าที่เซฟไปแล้ว ต้องยิง API ไปอัปเดต
+        if (isEditBatchMode) {
+            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+            fetchGAS({ action: 'updateSlip', id: id, plate: nPlate, amount: nAmt, paymentDate: nDate, year: record.year })
+            .then(data => { 
+                if(data.status === "success") { 
+                    const idx = sessionRecords.findIndex(x => x.id === id); 
+                    sessionRecords[idx].plate = nPlate; 
+                    sessionRecords[idx].amount = nAmt; 
+                    sessionRecords[idx].date = nDate; 
+                    modalInstance.hide(); 
+                    renderSummaryTable(); 
+                    Swal.fire('สำเร็จ', 'อัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
+                } else { Swal.fire('ขัดข้อง', data.message || 'ไม่สามารถแก้ไขได้', 'error'); }
+            }).catch(err => { Swal.fire('ข้อผิดพลาดทางเครือข่าย', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error'); });
+        } else {
+            // ถ้าเป็นข้อมูลที่กำลังพิมพ์ค้างไว้ (ยังไม่อัปโหลด) แค่แก้ใน RAM เลย
+            const idx = sessionRecords.findIndex(x => x.id === id); 
+            sessionRecords[idx].plate = nPlate; 
+            sessionRecords[idx].amount = nAmt; 
+            sessionRecords[idx].date = nDate; 
+            modalInstance.hide(); 
+            renderSummaryTable(); 
+        }
     }
     
     function deleteRecord(id) { 
         Swal.fire({ 
-            title: 'ลบรายการ?', text: "ลบแล้วจะไม่สามารถกู้คืนได้", icon: 'warning', 
+            title: 'ลบรายการ?', text: "ยืนยันการลบข้อมูลนี้หรือไม่?", icon: 'warning', 
             showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'ลบเลย!' 
         }).then((result) => {
             if (result.isConfirmed) {
                 const record = sessionRecords.find(x => x.id === id);
-                if (!record) return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลนี้บนหน้าจอ', 'error');
-                const year = record.year;
+                if (!record) return;
 
-                Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
-
-                fetchGAS({ action: 'deleteSlip', id: id, year: year })
-                .then(data => { 
-                    if(data.status === "success") { 
-                        sessionRecords = sessionRecords.filter(x => x.id !== id); 
-                        renderSummaryTable(); 
-                        Swal.fire('สำเร็จ', 'ลบรายการเรียบร้อยแล้ว', 'success');
-                    } else {
-                        Swal.fire('ขัดข้อง', data.message || 'ไม่สามารถลบได้', 'error');
-                    }
-                }).catch(err => {
-                    Swal.fire('ข้อผิดพลาดทางเครือข่าย', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error');
-                });
+                if (isEditBatchMode) {
+                    Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+                    fetchGAS({ action: 'deleteSlip', id: id, year: record.year })
+                    .then(data => { 
+                        if(data.status === "success") { 
+                            sessionRecords = sessionRecords.filter(x => x.id !== id); 
+                            renderSummaryTable(); 
+                            Swal.fire('สำเร็จ', 'ลบรายการเรียบร้อยแล้ว', 'success');
+                        } else { Swal.fire('ขัดข้อง', data.message || 'ไม่สามารถลบได้', 'error'); }
+                    }).catch(err => { Swal.fire('ข้อผิดพลาดทางเครือข่าย', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error'); });
+                } else {
+                    // ลบใน RAM ทันทีสำหรับโหมดพิมพ์
+                    sessionRecords = sessionRecords.filter(x => x.id !== id); 
+                    renderSummaryTable(); 
+                }
             }
+        });
+    }
+
+    function finalizeAction() {
+        if (isEditBatchMode) {
+            backToDashboard();
+        } else {
+            confirmAndUploadAll();
+        }
+    }
+
+    // ฟังก์ชันใหม่: อัปโหลดทีเดียวตอนจบ ทำให้หน้าตาสวยงามและไม่รบกวนคนพิมพ์
+    async function confirmAndUploadAll() {
+        document.getElementById('importSummaryView').classList.add('hidden');
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+        
+        let total = sessionRecords.length;
+        
+        for (let i = 0; i < total; i++) {
+            let r = sessionRecords[i];
+            
+            // ข้ามใบที่ส่งสำเร็จไปแล้ว (ใช้กรณีเน็ตหลุดกลางคันแล้วกดส่งซ้ำ)
+            if (r.uploaded) continue; 
+            
+            document.getElementById('pdfProgressText').innerText = `ระบบกำลังอัปโหลดและบันทึกใบที่ ${i + 1} / ${total}...`;
+            let percent = Math.round((i / total) * 100);
+            document.getElementById('pdfProgressBar').style.width = percent + '%';
+            document.getElementById('pdfProgressBar').innerText = percent + '%';
+
+            try {
+                let res = await fetchGAS({ 
+                    action: 'saveSlip', year: r.year, month: globalSetup.month, week: globalSetup.week, 
+                    dateRange: globalSetup.dateRange, plate: r.plate, amount: r.amount, paymentDate: r.date, 
+                    fileName: "slip_" + r.id + ".jpg", mimeType: "image/jpeg", fileBase64: r.base64,
+                    rowId: r.id, folderId: globalSetup.folderId // ใช้ ID Folder ตรงๆ เลย
+                });
+                
+                if(res.status === "success") { 
+                    r.uploaded = true; // มาร์คไว้ว่าเซฟสำเร็จแล้ว
+                } else {
+                    throw new Error(res.message);
+                }
+            } catch (err) {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                Swal.fire({ 
+                    title: 'เชื่อมต่อขัดข้อง', 
+                    text: `บันทึกค้างอยู่ที่ใบที่ ${i + 1} กรุณากดปุ่ม "ยืนยันและเริ่มอัปโหลดเข้าระบบ" อีกครั้ง เพื่อทำงานต่อจากเดิม`, 
+                    icon: 'warning' 
+                });
+                document.getElementById('importSummaryView').classList.remove('hidden');
+                return; // หยุดลูป
+            }
+        }
+        
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        Swal.fire('เสร็จสิ้น!', 'อัปโหลดสลิปทั้งหมดเข้าระบบเรียบร้อยแล้ว!', 'success').then(() => {
+            backToDashboard();
         });
     }
     
