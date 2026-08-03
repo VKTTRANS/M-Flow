@@ -325,11 +325,11 @@
     async function fetchGAS(payload, retries = 3) {
         for (let i = 0; i <= retries; i++) {
             try {
+                // เปลี่ยนเป็น Simple POST request เพื่อหลีกเลี่ยง preflight OPTIONS และเพิ่ม redirect: 'follow'
                 let res = await fetch(GAS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    credentials: 'omit',
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    redirect: 'follow'
                 });
                 
                 let text = await res.text();
