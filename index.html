@@ -306,7 +306,7 @@
                     'Content-Type': 'text/plain;charset=utf-8'
                 },
                 body: JSON.stringify(payload),
-                credentials: 'omit' // 👈 เพิ่มบรรทัดนี้! คือไม้ตายสั่งห้ามส่งคุกกี้ แก้ปัญหาบัญชีซ้อน 100%
+                credentials: 'omit'
             });
             
             let text = await res.text();
