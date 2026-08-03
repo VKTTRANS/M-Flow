@@ -322,14 +322,13 @@
     let globalRecentMonths = [];
     let isOlderLoaded = false;
 
-    // 🔥 แก้อาการ 404 แบบ Multi-Account ขั้นเด็ดขาด (ใส่ credentials: 'omit' และห้ามมี ?t=)
+    // 🔥 โค้ดที่แก้แล้ว: เอาตัวปัญหาออกทั้งหมด คลีนและเสถียร 100%
     async function fetchGAS(payload, retries = 3) {
         for (let i = 0; i <= retries; i++) {
             try {
                 let res = await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    credentials: 'omit', // ป้องกัน Google สับสนเวลาล็อกอินหลายบัญชี
                     body: JSON.stringify(payload)
                 });
                 
