@@ -319,43 +319,34 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwyCZR0pWSUrHspbIHOnUXVOux3vThqbKu5yOX8uWFPewCjvkuqyFqohFqc_TLTjYwd/exec"; 
     let appData = [], globalDocLinks = {}, currentUserRole = "", slipQueue = [], currentIndex = 0, currentBase64 = "", sessionRecords = [], globalSetup = {};
     let isEditBatchMode = false; 
-    let isBackgroundLoading = false; // ตัวแปรคอยเช็คสถานะการโหลดของเก่า
+    let globalRecentMonths = [];
+    let isOlderLoaded = false;
 
+    // 🔥 แก้อาการ 404 แบบ Multi-Account ขั้นเด็ดขาด (ใส่ credentials: 'omit' และห้ามมี ?t=)
     async function fetchGAS(payload, retries = 3) {
         for (let i = 0; i <= retries; i++) {
             try {
-                // เอา ?t= ออก และใส่ headers กลับเข้าไป เพื่อป้องกัน Google เปลี่ยน POST เป็น GET
                 let res = await fetch(GAS_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8'
-                    },
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    credentials: 'omit', // ป้องกัน Google สับสนเวลาล็อกอินหลายบัญชี
                     body: JSON.stringify(payload)
                 });
                 
                 let text = await res.text();
                 
-                if (!res.ok || text.includes("<html") || text.includes("Drive - Sorry")) {
+                if (!res.ok || text.includes("<html") || text.includes("Drive - Sorry") || text.includes("Not Found")) {
                     throw new Error("Bad_Response");
                 }
                 
                 let data = JSON.parse(text);
-                
-                // กันเหนียว เผื่อ Google รวนอีก
-                if (data.message === "Backend Ready!") {
-                    throw new Error("Redirect_To_GET");
-                }
-                
+                if (data.message === "Backend Ready!") throw new Error("Redirect_To_GET");
                 return data; 
                 
             } catch (err) {
-                if (err.message === "Redirect_To_GET") {
-                    if (i === retries) {
-                        throw new Error("ระบบ Google รวน (เปลี่ยนคำสั่งเป็น GET อัตโนมัติ) โปรดตรวจสอบลิงก์ GAS_URL ให้แน่ใจว่าลงท้ายด้วย /exec");
-                    }
+                if (err.message === "Redirect_To_GET" && i === retries) {
+                    throw new Error("ระบบ Google รวน (เปลี่ยนคำสั่งเป็น GET อัตโนมัติ)");
                 }
-                
-                // ถ้ายิงแล้วสะดุด ให้รอ 2 วินาทีแล้วแอบยิงใหม่เงียบๆ (ไม่มี Error เด้งกวนใจ)
                 if (i < retries) {
                     console.warn(`[ระบบ] สะดุด... กำลังลองยิงซ้ำรอบที่ ${i + 1}`);
                     await new Promise(resolve => setTimeout(resolve, 2000)); 
@@ -404,7 +395,6 @@
                 document.getElementById('btnGenDoc').classList.add('hidden');
                 document.getElementById('btnImportSlip').classList.add('hidden');
             }
-            
             loadDashboardData();
         } else {
             document.getElementById('loginView').classList.remove('hidden');
@@ -429,23 +419,21 @@
 
     function logout() { localStorage.removeItem('mflow_session'); location.reload(); }
 
-    // 🚀 อัปเดตใหม่: ฟังก์ชันดึงข้อมูลแบบแบ่ง 2 สเต็ป (หน้าบ้าน)
     function loadDashboardData() {
         const selectedYear = document.getElementById('filterYear').value;
         document.querySelectorAll('.currentYearLabel').forEach(el => { el.innerText = selectedYear; });
 
-        // คำนวณหาเดือนปัจจุบัน และเดือนที่แล้ว แบบเป๊ะๆ ตามรายการที่มีในระบบ
         const monthNames = ["01_Jan", "02_Feb", "03_Mar", "04_Apr", "05_May", "06_Jun", "07_Jul", "08_Aug", "09_Sep", "10_Oct", "11_Nov", "12_Dec"];
         let d = new Date();
         let cIdx = d.getMonth();
         let pIdx = cIdx === 0 ? 11 : cIdx - 1;
-        let recentMonths = [monthNames[cIdx], monthNames[pIdx]];
+        
+        globalRecentMonths = [monthNames[cIdx], monthNames[pIdx]];
+        isOlderLoaded = false; 
 
-        // ล้างข้อมูลเก่าบนจอก่อน
         document.getElementById('dataAccordion').innerHTML = `<div class="text-center text-secondary py-5"><div class="spinner-border spinner-border-sm text-primary mb-2"></div><br>กำลังโหลดข้อมูลล่าสุด...</div>`;
 
-        // 1. สั่งดึงข้อมูลแค่ 2 เดือนล่าสุด (โหลดเร็ว)
-        fetchGAS({ action: 'getData', year: selectedYear, fetchMode: 'recent', months: recentMonths })
+        fetchGAS({ action: 'getData', year: selectedYear, fetchMode: 'recent', months: globalRecentMonths })
         .then(data => {
             if (data.status === "success") { 
                 appData = data.data; 
@@ -457,30 +445,38 @@
                     dl.innerHTML = "";
                     data.plates.forEach(p => dl.innerHTML += `<option value="${p}">`);
                 }
-
-                // 2. ดึงข้อมูลเดือนเก่าๆ ที่เหลือแบบเบื้องหลัง (Background Load)
-                if (!isBackgroundLoading) {
-                    isBackgroundLoading = true;
-                    // หน่วงเวลา 1 วินาที ให้หน้าจอเรนเดอร์เสร็จก่อน ค่อยไปกวน Server
-                    setTimeout(() => {
-                        fetchGAS({ action: 'getData', year: selectedYear, fetchMode: 'older', excludeMonths: recentMonths })
-                        .then(oldData => {
-                            if (oldData.status === "success" && oldData.data.length > 0) {
-                                // เอาข้อมูลเก่ามาต่อท้าย (หรือแทรก) แล้วอัปเดตหน้าจอเนียนๆ
-                                appData = appData.concat(oldData.data);
-                                applyFilters();
-                            }
-                            isBackgroundLoading = false;
-                        }).catch(err => { 
-                            isBackgroundLoading = false; 
-                            console.warn("โหลดข้อมูลเก่าไม่สำเร็จ จะโหลดอีกทีเมื่อมีการรีเฟรชหน้า", err); 
-                        });
-                    }, 1000);
-                }
             }
         }).catch(err => {
             document.getElementById('dataAccordion').innerHTML = `<div class="text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><br>โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรช</div>`;
             console.error(err);
+        });
+    }
+
+    function loadOlderData() {
+        const btn = document.getElementById('btnLoadOlder');
+        if(btn) {
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> กำลังดึงข้อมูล...`;
+            btn.disabled = true;
+        }
+        
+        const selectedYear = document.getElementById('filterYear').value;
+        fetchGAS({ action: 'getData', year: selectedYear, fetchMode: 'older', excludeMonths: globalRecentMonths })
+        .then(oldData => {
+            if (oldData.status === "success") {
+                if (oldData.data && oldData.data.length > 0) {
+                    appData = appData.concat(oldData.data); 
+                } else {
+                    Swal.fire({ title: 'แจ้งเตือน', text: 'ไม่มีประวัติข้อมูลเดือนเก่ากว่านี้แล้วครับ', icon: 'info', timer: 2000, showConfirmButton: false });
+                }
+                isOlderLoaded = true;
+                applyFilters(); 
+            }
+        }).catch(err => { 
+            Swal.fire('ขัดข้อง', 'โหลดข้อมูลเก่าไม่สำเร็จ โปรดลองอีกครั้ง', 'error');
+            if(btn) {
+                btn.innerHTML = `<i class="bi bi-clock-history"></i> โหลดข้อมูลเดือนเก่าทั้งหมด`;
+                btn.disabled = false;
+            }
         });
     }
 
@@ -515,7 +511,11 @@
         const container = document.getElementById('dataAccordion'); 
         
         if (dataArray.length === 0) {
-            container.innerHTML = `<div class="text-center text-secondary py-5"><i class="bi bi-inbox fs-1"></i><br>ไม่พบข้อมูลในปีนี้</div>`;
+            let emptyMsg = `<div class="text-center text-secondary py-5"><i class="bi bi-inbox fs-1"></i><br>ไม่พบข้อมูลในช่วงที่เลือก</div>`;
+            if(!isOlderLoaded) {
+                emptyMsg += `<div class="text-center mt-3"><button id="btnLoadOlder" class="btn btn-outline-info rounded-pill px-4" onclick="loadOlderData()"><i class="bi bi-clock-history"></i> ค้นหาประวัติเดือนเก่าๆ</button></div>`;
+            }
+            container.innerHTML = emptyMsg;
             return;
         }
         
@@ -608,6 +608,15 @@
                     </div>
                 </div>`;
             idx++;
+        }
+        
+        if (!isOlderLoaded) {
+            fullHtml += `
+            <div class="text-center mt-4 mb-4">
+                <button id="btnLoadOlder" class="btn btn-outline-info rounded-pill px-4" onclick="loadOlderData()">
+                    <i class="bi bi-clock-history"></i> โหลดข้อมูลเดือนเก่าทั้งหมด
+                </button>
+            </div>`;
         }
         
         container.innerHTML = fullHtml;
