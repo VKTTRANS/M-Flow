@@ -300,27 +300,30 @@
     let isEditBatchMode = false; // ตัวแปรเช็คสถานะการเข้าหน้าสรุป
 
     async function fetchGAS(payload) {
-        let res = await fetch(GAS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
-        
-        let text = await res.text();
-        
-        try {
-            let data = JSON.parse(text);
-            if (data.message === "Backend Ready!") {
-                throw new Error("ระบบเรียกทำงานผิดพลาด - โปรดตรวจสอบการ Deploy New Version ใน Apps Script");
+            let res = await fetch(GAS_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify(payload),
+                credentials: 'omit' // 👈 เพิ่มบรรทัดนี้! คือไม้ตายสั่งห้ามส่งคุกกี้ แก้ปัญหาบัญชีซ้อน 100%
+            });
+            
+            let text = await res.text();
+            
+            try {
+                let data = JSON.parse(text);
+                if (data.message === "Backend Ready!") {
+                    throw new Error("ระบบเรียกทำงานผิดพลาด - โปรดตรวจสอบการ Deploy New Version ใน Apps Script");
+                }
+                return data;
+            } catch (err) {
+                if(text.includes("ไม่สามารถเปิดไฟล์ได้ในเวลานี้") || text.includes("<html") || text.includes("Drive - Sorry")) {
+                    throw new Error("เซิร์ฟเวอร์ Google ทำงานหนักเกินไป กรุณาลองใหม่อีกครั้งครับ");
+                }
+                throw new Error(err.message || text);
             }
-            return data;
-        } catch (err) {
-            if(text.includes("ไม่สามารถเปิดไฟล์ได้ในเวลานี้") || text.includes("<html") || text.includes("Drive - Sorry")) {
-                throw new Error("เซิร์ฟเวอร์ Google ทำงานหนักเกินไป กรุณาลองใหม่อีกครั้งครับ");
-            }
-            throw new Error(err.message || text);
         }
-    }
 
     function formatThaiDate(dateStr) { 
         if(!dateStr) return "";
