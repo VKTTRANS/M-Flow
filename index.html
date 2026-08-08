@@ -325,7 +325,6 @@
     async function fetchGAS(payload, retries = 3) {
         for (let i = 0; i <= retries; i++) {
             try {
-                // เปลี่ยนเป็น Simple POST request เพื่อหลีกเลี่ยง preflight OPTIONS และเพิ่ม redirect: 'follow'
                 let res = await fetch(GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload),
@@ -847,8 +846,21 @@
         document.getElementById('processingSection').classList.add('hidden');
         document.getElementById('importSummaryView').classList.add('hidden'); 
         sessionRecords = []; 
+        
+        // --- ส่วนที่เพิ่มเพื่อรีเซ็ตค่าและตั้งค่าให้เริ่มที่เดือนปัจจุบัน ---
+        const d = new Date();
+        const monthNames = ["01_Jan", "02_Feb", "03_Mar", "04_Apr", "05_May", "06_Jun", "07_Jul", "08_Aug", "09_Sep", "10_Oct", "11_Nov", "12_Dec"];
+        
+        const yearOpt = document.getElementById('setYear').querySelector(`option[value="${d.getFullYear()}"]`);
+        if(yearOpt) yearOpt.selected = true;
+        document.getElementById('setMonth').value = monthNames[d.getMonth()];
+        
+        document.getElementById('setPaymentDate').value = "";
         document.getElementById('setTransferDate').value = "";
         document.getElementById('setTransferTime').value = "";
+        document.getElementById('slipFiles').value = "";
+        // --------------------------------------------------------
+
         lookupDateRange();
     }
     
