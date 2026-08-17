@@ -1085,6 +1085,7 @@
                 month: globalSetup.month,
                 week: globalSetup.week,
                 dateRange: globalSetup.dateRange,
+                forwardBalance: parseFloat(globalSetup.forwardBalance) || 0, // 👈 เพิ่มการส่งค่ายอดยกมาไปให้ Server ตรงนี้ครับ
                 transferDateStr: tDateStr,
                 transferAmountStr: tAmtStr,
                 records: recordsToUpload.map(r => ({
