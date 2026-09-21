@@ -83,14 +83,12 @@
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 border-bottom border-secondary pb-3">
             <h3 class="fw-bold text-gradient mb-0"><i class="bi bi-grid-1x2"></i> DASHBOARD</h3>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                
                 <div id="actionBar" class="d-flex align-items-center gap-2 hidden">
                     <span class="text-secondary small me-2"><i class="bi bi-arrow-right-short"></i> ดำเนินการ:</span>
                     <button id="btnGenDoc" class="btn btn-outline-info btn-sm fw-bold px-3 hidden" onclick="requestGenerateAllPDFs()"><i class="bi bi-file-earmark-pdf"></i> สร้างเอกสารรวมใหม่</button>
                     <button id="btnExportCSV" class="btn btn-success btn-sm fw-bold px-3 hidden" onclick="processExportChecked()"><i class="bi bi-file-earmark-excel"></i> ดาวน์โหลด CSV</button>
                     <button id="btnImportSlip" class="btn btn-primary btn-sm fw-bold shadow-sm ms-3 px-3 hidden" onclick="openImportView()"><i class="bi bi-plus-circle"></i> นำเข้าสลิปใหม่</button>
                 </div>
-                
                 <div class="border-start border-secondary ps-3 ms-2 d-flex align-items-center gap-2">
                     <span id="userRoleBadge" class="badge bg-secondary px-3 py-2 fw-normal"></span>
                     <button class="btn btn-outline-danger btn-sm fw-bold" onclick="logout()"><i class="bi bi-power"></i> ออกจากระบบ</button>
@@ -282,7 +280,7 @@
         </div>
 
         <div id="importSummaryView" class="card p-4 hidden mx-auto border-0" style="max-width: 800px;">
-            <h5 class="text-center text-gradient mb-4"><i class="bi bi-search"></i> ตรวจสอบความถูกต้อง / แก้ไขข้อมูล</h5>
+            <h5 class="text-center text-gradient mb-4" id="summaryViewTitle"><i class="bi bi-search"></i> ตรวจสอบความถูกต้อง / แก้ไขข้อมูล</h5>
             <div class="row mb-3 text-center">
                 <div class="col-6">
                     <div class="summary-box shadow-sm p-3">
@@ -310,7 +308,10 @@
                     <tbody id="importSummaryTableBody"></tbody>
                 </table>
             </div>
-            <button id="btnFinalizeImport" class="btn btn-primary w-100 py-3" onclick="finalizeAction()"><i class="bi bi-cloud-upload"></i> ยืนยันข้อมูล อัปโหลดเข้าระบบ และสร้าง PDF ทันที</button>
+            <div class="d-flex gap-2">
+                <button id="btnFinalizeImport" class="btn btn-primary flex-grow-1 py-3" onclick="finalizeAction()"><i class="bi bi-cloud-upload"></i> ยืนยันข้อมูล อัปโหลดเข้าระบบ และสร้าง PDF ทันที</button>
+                <button id="btnDeleteWholeWeek" class="btn btn-danger py-3 px-4 hidden" onclick="deleteWholeWeek()"><i class="bi bi-trash-fill"></i> ลบทั้งสัปดาห์</button>
+            </div>
         </div>
     </div>
 
@@ -767,15 +768,20 @@
 
     function openEditBatch(month, week) {
         isEditBatchMode = true; 
+        const selectedYear = document.getElementById('filterYear').value;
         document.getElementById('dashboardView').classList.add('hidden'); 
         document.getElementById('importView').classList.remove('hidden');
-        document.getElementById('importTitle').innerHTML = `<i class="bi bi-pencil-square"></i> จัดการข้อมูลย้อนหลัง`;
+        document.getElementById('importTitle').innerHTML = `<i class="bi bi-pencil-square"></i> จัดการข้อมูลย้อนหลัง (${month} - ${week})`;
         document.getElementById('setupSection').classList.add('hidden'); 
         document.getElementById('processingSection').classList.add('hidden');
         document.getElementById('importSummaryView').classList.remove('hidden');
         
+        const btnDelWeek = document.getElementById('btnDeleteWholeWeek');
+        if(btnDelWeek) btnDelWeek.classList.remove('hidden');
+        
         sessionRecords = appData.filter(r => r.month === month && r.week === week).map(r => ({ 
-            id: r.id, plate: r.plate, amount: r.amount, date: displaySafeDate(r.paymentDate), year: r.year, uploaded: true
+            id: r.id, plate: r.plate, amount: r.amount, date: displaySafeDate(r.paymentDate), year: r.year, 
+            month: r.month, week: r.week, uploaded: true
         })); 
         renderSummaryTable();
     }
@@ -840,6 +846,10 @@
         document.getElementById('setupSection').classList.remove('hidden'); 
         document.getElementById('processingSection').classList.add('hidden');
         document.getElementById('importSummaryView').classList.add('hidden'); 
+        
+        const btnDelWeek = document.getElementById('btnDeleteWholeWeek');
+        if(btnDelWeek) btnDelWeek.classList.add('hidden');
+        
         sessionRecords = []; 
         
         const d = new Date();
@@ -948,22 +958,26 @@
     
     function renderSummaryTable() {
         let totalAmt = 0; 
+        let rowsHtml = "";
         const tbody = document.getElementById('importSummaryTableBody'); 
-        tbody.innerHTML = "";
         
         sessionRecords.forEach(r => { 
             totalAmt += parseFloat(r.amount); 
-            tbody.innerHTML += `
+            let btnDisabled = (r.uploaded && !isEditBatchMode) ? 'disabled' : '';
+            
+            rowsHtml += `
                 <tr class="border-bottom border-secondary">
-                    <td>${r.plate}</td>
+                    <td class="text-light">${r.plate}</td>
                     <td class='text-success fw-bold'>${r.amount}</td>
-                    <td>${r.date}</td>
+                    <td class="text-light">${r.date}</td>
                     <td class="text-end pe-3">
-                        <button class="btn btn-sm btn-outline-warning rounded-circle me-1" onclick="openEditModal('${r.id}')" ${r.uploaded ? 'disabled' : ''}><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteRecord('${r.id}')" ${r.uploaded ? 'disabled' : ''}><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-outline-warning rounded-circle me-1" onclick="openEditModal('${r.id}')" ${btnDisabled}><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteRecord('${r.id}')" ${btnDisabled}><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>`; 
         });
+        
+        tbody.innerHTML = rowsHtml;
         
         document.getElementById('sumCount').innerText = sessionRecords.length; 
         document.getElementById('sumAmount').innerText = totalAmt.toLocaleString() + " ฿";
@@ -1041,6 +1055,39 @@
                     sessionRecords = sessionRecords.filter(x => x.id !== id); 
                     renderSummaryTable(); 
                 }
+            }
+        });
+    }
+
+    function deleteWholeWeek() {
+        if(sessionRecords.length === 0) return;
+        const record = sessionRecords[0];
+        const year = record.year;
+        const month = record.month;
+        const week = record.week;
+
+        Swal.fire({
+            title: 'ยืนยันลบทั้งสัปดาห์?',
+            text: `คุณต้องการลบข้อมูลสลิปและ PDF ของรอบ ${month} - ${week} ทั้งหมดใช่หรือไม่? (ไม่สามารถกู้คืนไฟล์ได้)`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'ลบข้อมูลทั้งหมด',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'กำลังลบข้อมูลและไฟล์ภาพ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+                fetchGAS({ action: 'deleteWholeWeek', year: year, month: month, week: week })
+                .then(data => {
+                    if(data.status === "success") {
+                        Swal.fire('สำเร็จ', 'ลบข้อมูลทั้งสัปดาห์เคลียร์ออกจากระบบเรียบร้อยแล้ว', 'success').then(() => {
+                            backToDashboard();
+                        });
+                    } else {
+                        Swal.fire('ขัดข้อง', data.message || 'ไม่สามารถลบได้', 'error');
+                    }
+                }).catch(err => { Swal.fire('ข้อผิดพลาดทางเครือข่าย', 'โปรดตรวจสอบอินเทอร์เน็ต', 'error'); });
             }
         });
     }
