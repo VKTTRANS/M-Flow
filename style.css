@@ -7,7 +7,6 @@ body {
 }
 .hidden { display: none !important; }
 
-/* ================= Login Page (Modern Glassmorphism) ================= */
 .login-container {
     min-height: 100vh;
     display: flex;
@@ -18,7 +17,6 @@ body {
     overflow: hidden;
 }
 
-/* Floating Orbs */
 .orb {
     position: absolute;
     width: 300px;
@@ -43,7 +41,6 @@ body {
     100% { transform: translateY(-30px) scale(1.1); }
 }
 
-/* Login Card */
 .login-card {
     background: rgba(30, 41, 59, 0.6);
     backdrop-filter: blur(16px);
@@ -55,7 +52,6 @@ body {
     z-index: 1; 
 }
 
-/* Bounce Animation */
 .animate-bounce i {
     display: inline-block;
     animation: bounce 2s infinite ease-in-out;
@@ -65,7 +61,6 @@ body {
     50% { transform: translateY(-10px); }
 }
 
-/* Fade In Up */
 .fade-in-up {
     animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -74,7 +69,6 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Custom Inputs & Floating Labels */
 .custom-input {
     background-color: rgba(15, 23, 42, 0.5) !important;
     border: 1px solid #334155;
@@ -95,7 +89,6 @@ body {
     transform: scale(0.85) translateY(-0.8rem) translateX(0.15rem);
 }
 
-/* Login Button */
 .login-btn {
     background: linear-gradient(135deg, #3b82f6, #6366f1);
     border: none;
@@ -111,7 +104,6 @@ body {
     transform: translateY(1px);
 }
 
-/* ================= Dashboard Elements ================= */
 .card { 
     background-color: #1e293b; 
     border: 1px solid #334155; 
@@ -125,7 +117,6 @@ body {
     font-weight: 700; 
 }
 
-/* ฟอร์มและปุ่ม (Dashboard) */
 .form-control, .form-select { 
     background-color: #0f172a; 
     border: 1px solid #334155; 
@@ -142,7 +133,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
 .btn { border-radius: 6px; font-weight: 500; transition: all 0.2s ease; }
 .btn-primary:not(.login-btn) { background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; }
 
-/* ⭐️ รูปสลิป (ปรับให้ใหญ่เต็มตา) */
 .slip-preview { 
     max-height: 75vh; 
     width: 100%;
@@ -153,7 +143,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
     background: #0f172a; 
 }
 
-/* ================= Accordion ================= */
 .accordion-item { 
     background-color: transparent; 
     border: 1px solid #334155; 
@@ -165,7 +154,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
 .custom-caret { transition: transform 0.3s ease; }
 [aria-expanded="true"] .custom-caret { transform: rotate(180deg); }
 
-/* ตารางและ Checkbox */
 .table-sm th, .table-sm td { padding: 0.6rem 1rem; font-size: 0.9rem; }
 .table-hover tbody tr:hover { background-color: rgba(56, 189, 248, 0.05); }
 .form-check-input { background-color: #334155; border-color: #475569; cursor: pointer; }
@@ -179,7 +167,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
     display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 
-/* SweetAlert2 Dark Mode */
 .swal2-popup { background-color: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #334155 !important; border-radius: 12px !important; font-family: 'Prompt', sans-serif !important; }
 .swal2-title { color: #fff !important; font-size: 1.5rem !important; }
 .swal2-content, .swal2-html-container { color: #cbd5e1 !important; }
