@@ -8,9 +8,6 @@ let globalRecentMonths = [];
 let isOlderLoaded = false;
 let modalInstance = null;
 
-// ==========================================
-// 1. ฟังก์ชันติดต่อกับ Google Apps Script (ใช้เฉพาะตอนสร้าง PDF)
-// ==========================================
 async function fetchGAS(payload, retries = 3) {
     for (let i = 0; i <= retries; i++) {
         try {
@@ -31,7 +28,7 @@ async function fetchGAS(payload, retries = 3) {
                 throw new Error("ระบบ Google รวน (เปลี่ยนคำสั่งเป็น GET อัตโนมัติ)");
             }
             if (i < retries) {
-                console.warn(`[ระบบ GAS] สะดุด... กำลังลองยิงซ้ำรอบที่ ${i + 1}`);
+                console.warn(`[ระบบ] สะดุด... กำลังลองยิงซ้ำรอบที่ ${i + 1}`);
                 await new Promise(resolve => setTimeout(resolve, 2000)); 
                 continue;
             } else {
@@ -41,9 +38,6 @@ async function fetchGAS(payload, retries = 3) {
     }
 }
 
-// ==========================================
-// 2. ฟังก์ชันติดต่อกับ Supabase โดยตรง (รวดเร็วมาก)
-// ==========================================
 async function fetchSupabaseClient(path, method = 'GET', payload = null) {
     const options = {
         method: method,
@@ -55,25 +49,11 @@ async function fetchSupabaseClient(path, method = 'GET', payload = null) {
         }
     };
     if (payload) options.body = JSON.stringify(payload);
-    
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, options);
-    
-    // ตรวจสอบถ้าไม่ใช่สถานะ 2xx
-    if (!res.ok) {
-        let errorText = await res.text();
-        console.error("Supabase Error:", errorText);
-        throw new Error(`Supabase Fetch Error: ${res.status}`);
-    }
-    
-    // คำสั่ง DELETE/PATCH แบบไม่เอาค่าคืนกลับมา อาจจะส่ง Response ว่างเปล่ามา
-    if (res.status === 204) return null; 
-    
+    if (!res.ok) throw new Error("Supabase Fetch Error");
     return await res.json();
 }
 
-// ==========================================
-// ส่วนจัดการ วัน/เวลา และ ฟอร์แมต
-// ==========================================
 function formatThaiDate(dateStr) { 
     if(!dateStr) return "";
     let parts = dateStr.split('-');
@@ -103,9 +83,6 @@ function formatDateToDDMMYY(dbDate) {
     return dbDate;
 }
 
-// ==========================================
-// ระบบ Session และ Login
-// ==========================================
 function checkSession() {
     const session = JSON.parse(localStorage.getItem('mflow_session'));
     if (session && session.expire > Date.now()) {
@@ -136,7 +113,6 @@ async function doLogin() {
     Swal.fire({ title: 'กำลังตรวจสอบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
     
     try {
-        // ยิงตรงไปตรวจสอบในตาราง user ของ Supabase
         let result = await fetchSupabaseClient(`user?select=*&username=eq.${encodeURIComponent(u)}`);
         if (result && result.length > 0) {
             if (result[0].password === p) {
@@ -159,9 +135,6 @@ function logout() {
     location.reload(); 
 }
 
-// ==========================================
-// โหลดข้อมูล Dashboard
-// ==========================================
 async function loadDashboardData() {
     const selectedYear = document.getElementById('filterYear').value;
     document.querySelectorAll('.currentYearLabel').forEach(el => { el.innerText = selectedYear; });
@@ -177,7 +150,6 @@ async function loadDashboardData() {
     isOlderLoaded = false; 
 
     try {
-        // ยิงตรงไป Supabase ดึงข้อมูลแค่ของปีและเดือนที่กำหนด 
         let path = `mflow_data?year=eq.${selectedYear}&order=month.desc,week.desc,plate.asc&limit=10000&month=in.(${encodeURIComponent(globalRecentMonths.join(','))})`;
         let allData = await fetchSupabaseClient(path);
 
@@ -190,11 +162,9 @@ async function loadDashboardData() {
             };
         });
 
-        // ดึงรายการป้ายทะเบียน
         let pData = await fetchSupabaseClient('plate');
         let platesList = pData.map(p => p.plate).filter(String);
 
-        // ดึงประวัติการลิงก์
         let hData = await fetchSupabaseClient('export_history');
         globalDocLinks = {};
         hData.forEach(h => { globalDocLinks[`${h.month}|${h.week}`] = h.url; });
@@ -211,7 +181,6 @@ async function loadDashboardData() {
             platesList.forEach(p => dl.innerHTML += `<option value="${p}">`);
         }
 
-        // ให้โหลดของเก่าแอบไว้ข้างหลัง
         loadOlderDataBackground(selectedYear);
     } catch (err) {
         document.getElementById('dataAccordion').innerHTML = `<div class="text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><br>โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรช</div>`;
@@ -264,9 +233,6 @@ async function loadOlderDataBackground(year) {
     }
 }
 
-// ==========================================
-// ส่วนฟิลเตอร์และแสดงผลในตาราง
-// ==========================================
 function applyFilters() {
     const fMonth = document.getElementById('filterMonth').value;
     const fWeek = document.getElementById('filterWeek').value;
@@ -431,9 +397,6 @@ function getSelectedIds() {
     return ids;
 }
 
-// ==========================================
-// เรียกใช้งานสร้างเอกสาร PDF (ต้องผ่าน GAS)
-// ==========================================
 function requestGenerateAllPDFs() {
     const ids = getSelectedIds(); 
     if(!ids) return;
@@ -495,12 +458,15 @@ function requestGenerateAllPDFs() {
             let fwBalance = parseFloat(result.value.balance) || 0;
             let tAmount = parseFloat(result.value.tamount) || 0;
             let formattedDate = result.value.date ? formatThaiDate(result.value.date) : "";
-            generatePDFOldWay(ids, selectedYear, fwBalance, formattedDate, result.value.time, tAmount);
+            
+            // ส่งข้อมูลเดือนและสัปดาห์แนบไปด้วย เพื่อให้หาข้อมูลเจอแน่นอน
+            generatePDFOldWay(ids, selectedYear, firstItem.month, firstItem.week, fwBalance, formattedDate, result.value.time, tAmount);
         }
     });
 }
 
-async function generatePDFOldWay(ids, year, fwBalance, tDate, tTime, tAmount) {
+// อัปเดตฟังก์ชันรับพารามิเตอร์ month กับ week เพิ่ม
+async function generatePDFOldWay(ids, year, month, week, fwBalance, tDate, tTime, tAmount) {
     document.getElementById('loadingOverlay').classList.remove('hidden'); 
     document.getElementById('pdfProgressBar').style.width = '50%';
     document.getElementById('pdfProgressBar').innerText = 'กำลังสร้าง PDF...';
@@ -511,6 +477,8 @@ async function generatePDFOldWay(ids, year, fwBalance, tDate, tTime, tAmount) {
             action: 'generatePDFOnly', 
             ids: ids, 
             year: year,
+            month: month, // ส่งเดือนไปด้วย
+            week: week,   // ส่งสัปดาห์ไปด้วย
             forwardBalance: fwBalance, 
             transferDate: tDate, 
             transferTime: tTime, 
@@ -534,9 +502,6 @@ async function generatePDFOldWay(ids, year, fwBalance, tDate, tTime, tAmount) {
     }
 }
 
-// ==========================================
-// อื่นๆ
-// ==========================================
 function processExportChecked() {
     const ids = getSelectedIds(); 
     if(!ids) return;
@@ -783,7 +748,6 @@ function openEditModal(id) {
     modalInstance.show(); 
 }
 
-// 🚀 แก้ไขข้อมูลแบบยิงตรง Supabase
 async function saveEdit() {
     const id = document.getElementById('editId').value;
     const nPlate = document.getElementById('editPlate').value;
@@ -820,7 +784,6 @@ async function saveEdit() {
     }
 }
 
-// 🚀 ลบข้อมูล (ต้องส่ง GAS ไปลบไฟล์ แล้วให้ Supabase ลบข้อมูล)
 function deleteRecord(id) { 
     Swal.fire({ 
         title: 'ลบรายการ?', text: "ยืนยันการลบข้อมูลนี้หรือไม่?", icon: 'warning', 
@@ -833,10 +796,7 @@ function deleteRecord(id) {
             if (isEditBatchMode) {
                 Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
                 try {
-                    // ส่งไป GAS ให้ลบเฉพาะไฟล์รูป
                     await fetchGAS({ action: 'deleteSlip', id: id, year: record.year });
-                    
-                    // ยิงตรงไปลบข้อมูลใน Supabase
                     await fetchSupabaseClient(`mflow_data?id=eq.${id}`, 'DELETE');
                     
                     sessionRecords = sessionRecords.filter(x => x.id !== id); 
@@ -853,7 +813,6 @@ function deleteRecord(id) {
     });
 }
 
-// 🚀 ลบทั้งสัปดาห์
 function deleteWholeWeek() {
     if(sessionRecords.length === 0) return;
     const record = sessionRecords[0];
@@ -874,10 +833,7 @@ function deleteWholeWeek() {
         if (result.isConfirmed) {
             Swal.fire({ title: 'กำลังลบข้อมูลและไฟล์ภาพ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
             try {
-                // ส่งไป GAS ให้ลบ Folder ไฟล์รูป
                 await fetchGAS({ action: 'deleteWholeWeek', year: year, month: month, week: week });
-                
-                // ลบจาก Supabase ตรงๆ
                 await fetchSupabaseClient(`mflow_data?year=eq.${parseInt(year)}&month=eq.${encodeURIComponent(month)}&week=eq.${encodeURIComponent(week)}`, 'DELETE');
                 await fetchSupabaseClient(`export_history?month=eq.${encodeURIComponent(month)}&week=eq.${encodeURIComponent(week)}`, 'DELETE');
                 
