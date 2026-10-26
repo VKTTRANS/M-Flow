@@ -1,0 +1,18 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # รันอัตโนมัติทุกวันที่ 1, 6, 11, 16, 21, 26 ของทุกเดือน (ทุกๆ 5-6 วัน)
+    - cron: '0 0 1,6,11,16,21,26 * *'
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Table (plate)
+        run: |
+          curl -X GET "https://hzdmeoecwyttixxoddmy.supabase.co/rest/v1/plate?select=*&limit=1" \
+            -H "apikey: sb_publishable__XrYzsaWdDCEcR1DE5E-Dg_EseGu04f" \
+            -H "Authorization: Bearer sb_publishable__XrYzsaWdDCEcR1DE5E-Dg_EseGu04f" \
+            --fail
